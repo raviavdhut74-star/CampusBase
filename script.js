@@ -1,82 +1,159 @@
-:root{--bg:#0b1020;--bg2:#131a33;--card:#161e3b;--text:#e8ecff;--muted:#9aa4cf;--line:#26305a;--accent:#6c8cff;--accent2:#22d3ee;--r:16px}
-[data-theme=light]{--bg:#f5f7ff;--bg2:#e9edff;--card:#fff;--text:#12173a;--muted:#59618a;--line:#d6dcf5;--accent:#3d5afe;--accent2:#0891b2}
-*{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth;scroll-padding-top:80px}
-body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;transition:background .3s,color .3s}
-a{color:inherit;text-decoration:none}
-:focus-visible{outline:2px solid var(--accent2);outline-offset:3px}
-.highlight{background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
-.progress{position:fixed;top:0;left:0;height:3px;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));z-index:100}
-.navbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:12px;padding:14px 5vw;background:color-mix(in srgb,var(--bg) 85%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
-.logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:1.2rem;margin-right:auto}
-.logo-icon{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff}
-.nav-links{display:flex;gap:6px}
-.nav-links a{padding:8px 14px;border-radius:999px;color:var(--muted);transition:.2s}
-.nav-links a:hover,.nav-links a.active{color:var(--text);background:var(--bg2)}
-.badge{display:inline-block;min-width:20px;padding:0 6px;border-radius:999px;background:var(--accent);color:#fff;font-size:.75rem;text-align:center}
-.icon-btn{background:var(--bg2);border:1px solid var(--line);color:var(--text);width:40px;height:40px;border-radius:12px;cursor:pointer;font-size:1.1rem}
-.menu-btn{display:none}
-.tag{display:inline-block;font-size:.75rem;letter-spacing:.12em;color:var(--accent2);margin-bottom:14px}
-.hero{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center;padding:80px 5vw;min-height:80vh}
-h1{font-size:clamp(2.4rem,6vw,4.2rem);line-height:1.1;margin-bottom:18px}
-.hero p{color:var(--muted);max-width:52ch;margin-bottom:28px}
-.primary-btn{display:inline-block;padding:14px 26px;border-radius:999px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-weight:600;transition:transform .2s,box-shadow .2s}
-.primary-btn:hover{transform:translateY(-2px);box-shadow:0 10px 30px color-mix(in srgb,var(--accent) 40%,transparent)}
-.hero-stats{display:flex;gap:32px;margin-top:40px}
-.hero-stats strong{display:block;font-size:1.8rem}
-.hero-stats span{color:var(--muted);font-size:.85rem}
-.hero-visual{position:relative;display:grid;place-items:center;min-height:380px}
-.orbit{position:absolute;border:1px dashed var(--line);border-radius:50%;animation:spin 30s linear infinite}
-.orbit-one{width:320px;height:320px}.orbit-two{width:440px;height:440px;animation-direction:reverse;animation-duration:45s}
-@keyframes spin{to{transform:rotate(360deg)}}
-.book-card{position:relative;background:var(--card);border:1px solid var(--line);border-radius:24px;padding:28px;width:min(280px,100%);box-shadow:0 20px 60px rgba(0,0,0,.25)}
-.book-icon{font-size:2.2rem}
-.resource-line{display:flex;justify-content:space-between;padding:10px 0;border-top:1px solid var(--line);margin-top:8px}
-.section{padding:80px 5vw}
-.section-heading{text-align:center;max-width:640px;margin:0 auto 40px}
-.section-heading h2,.notice h2{font-size:clamp(1.8rem,4vw,2.6rem);line-height:1.2;margin-bottom:10px}
-.section-heading p{color:var(--muted)}
-.search{margin-top:22px;width:100%;padding:14px 18px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--text);font-size:1rem}
-.university-grid,.resource-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:20px;max-width:1100px;margin:auto}
-.university-card,.resource-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:24px;transition:transform .25s,border-color .25s}
-.university-card:hover,.resource-card:hover{transform:translateY(-6px);border-color:var(--accent)}
-.uni-number{float:right;color:var(--muted);font-size:.85rem}
-.uni-icon,.resource-card>span{font-size:2rem;display:block;margin-bottom:10px}
-.university-card h3{font-size:1.3rem}
-.university-card p,.resource-card p{color:var(--muted);font-size:.9rem;margin:6px 0 16px}
-.uni-btn{background:none;border:1px solid var(--accent);color:var(--accent);padding:9px 16px;border-radius:999px;cursor:pointer;font-weight:600;transition:.2s}
-.uni-btn:hover{background:var(--accent);color:#fff}
-.empty{text-align:center;color:var(--muted);margin-top:20px}
-.saved-list{list-style:none;max-width:700px;margin:auto;display:grid;gap:10px}
-.saved-list li,.res-list li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
-.saved-list .none{justify-content:center;color:var(--muted)}
-.notice{text-align:center;padding:80px 5vw;background:var(--bg2)}
-.notice p{color:var(--muted);max-width:60ch;margin:auto}
-.footer{text-align:center;padding:40px 5vw;color:var(--muted);display:grid;gap:8px;justify-items:center}
-.footer-note{font-size:.8rem}
-.modal{margin:auto;width:min(620px,92vw);max-height:86vh;overflow:auto;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:20px;padding:22px}
-.modal::backdrop{background:rgba(5,8,20,.65);backdrop-filter:blur(4px)}
-.modal[open]{animation:pop .22s ease}
-@keyframes pop{from{opacity:0;transform:scale(.96)}}
-.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
-.filters{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px}
-.filters label{flex:1;min-width:140px;font-size:.85rem;color:var(--muted)}
-.filters select{display:block;width:100%;margin-top:4px;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--text)}
-.tabs{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
-.tabs button{padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:none;color:var(--muted);cursor:pointer}
-.tabs button[aria-selected=true]{background:var(--accent);border-color:var(--accent);color:#fff}
-.res-list{list-style:none;display:grid;gap:10px}
-.res-list a{flex:1}.res-list a:hover{color:var(--accent2)}
-.star{background:none;border:0;color:var(--accent2);font-size:1.3rem;cursor:pointer}
-.to-top{position:fixed;right:20px;bottom:20px;width:44px;height:44px;border-radius:50%;border:0;background:var(--accent);color:#fff;font-size:1.2rem;cursor:pointer;z-index:40}
-.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,120px);background:var(--card);border:1px solid var(--line);padding:10px 18px;border-radius:999px;transition:transform .3s;z-index:120}
-.toast.show{transform:translate(-50%,0)}
-.reveal{opacity:0;transform:translateY(24px);transition:opacity .6s,transform .6s}
-.reveal.in{opacity:1;transform:none}
-@media(max-width:820px){
- .hero{grid-template-columns:1fr;padding-top:50px}.hero-visual{min-height:300px}.orbit-two{display:none}
- .menu-btn{display:block}
- .nav-links{position:absolute;top:100%;left:0;right:0;flex-direction:column;background:var(--bg);padding:12px 5vw;border-bottom:1px solid var(--line);display:none}
- .nav-links.open{display:flex}
+(() => {
+"use strict";
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+
+/* ---------- Data (admin.js shi match asaleli pahije) ---------- */
+const UNIS = [
+  { code: "SPPU",  name: "Savitribai Phule Pune University",          city: "Pune",    icon: "🏛️" },
+  { code: "DBATU", name: "Dr. Babasaheb Ambedkar Technological University", city: "Lonere", icon: "🎓" },
+  { code: "RTMNU", name: "Rashtrasant Tukadoji Maharaj Nagpur University", city: "Nagpur", icon: "📖" },
+  { code: "SGBAU", name: "Sant Gadge Baba Amravati University",       city: "Amravati", icon: "🏫" }
+];
+const BRANCHES = ["Computer", "IT", "Mechanical", "Civil", "Electrical", "E&TC"];
+const YEARS = ["FE", "SE", "TE", "BE"];
+const TYPES = { syllabus: "Syllabus", notes: "Notes", papers: "Question Papers", imp: "Important Questions" };
+
+/* ---------- Helpers ---------- */
+const store = {
+  get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+};
+let toastT;
+function toast(m) {
+  const t = $("#toast"); t.textContent = m; t.classList.add("show");
+  clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("show"), 2200);
 }
-@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}html{scroll-behavior:auto}.reveal{opacity:1;transform:none}}
+const sbReady = import("./supabase.js").then(m => m.sb).catch(() => null);
+
+/* ---------- Theme ---------- */
+const root = document.documentElement;
+function setTheme(t) { root.dataset.theme = t; $("#themeBtn").textContent = t === "dark" ? "🌙" : "☀️"; store.set("cb_theme", t); }
+setTheme(store.get("cb_theme", "dark"));
+$("#themeBtn").onclick = () => setTheme(root.dataset.theme === "dark" ? "light" : "dark");
+
+/* ---------- Mobile menu ---------- */
+const nav = $("#navLinks"), menuBtn = $("#menuBtn");
+menuBtn.onclick = () => { const o = nav.classList.toggle("open"); menuBtn.setAttribute("aria-expanded", o); };
+nav.addEventListener("click", e => { if (e.target.closest("a")) { nav.classList.remove("open"); menuBtn.setAttribute("aria-expanded", false); } });
+
+/* ---------- Scroll: progress bar, back-to-top ---------- */
+const bar = $("#progress"), toTop = $("#toTop");
+function onScroll() {
+  const h = document.documentElement.scrollHeight - innerHeight;
+  bar.style.width = (h > 0 ? scrollY / h * 100 : 0) + "%";
+  toTop.hidden = scrollY < 400;
+}
+addEventListener("scroll", onScroll, { passive: true }); onScroll();
+toTop.onclick = () => scrollTo({ top: 0, behavior: "smooth" });
+
+/* ---------- Footer year + hero counters ---------- */
+$("#year").textContent = new Date().getFullYear();
+const counts = [UNIS.length, BRANCHES.length];
+$$("[data-count]").forEach((el, i) => {
+  const end = counts[i] ?? +el.dataset.count;
+  let n = 0; const step = Math.max(1, Math.ceil(end / 20));
+  const id = setInterval(() => { n = Math.min(end, n + step); el.textContent = n; if (n >= end) clearInterval(id); }, 60);
+});
+
+/* ---------- University cards + search ---------- */
+const grid = $("#uniGrid");
+UNIS.forEach((u, i) => {
+  const c = document.createElement("article");
+  c.className = "university-card reveal";
+  c.dataset.search = (u.code + " " + u.name + " " + u.city).toLowerCase();
+  c.innerHTML = '<span class="uni-number"></span><span class="uni-icon"></span><h3></h3><p></p>';
+  $(".uni-number", c).textContent = String(i + 1).padStart(2, "0");
+  $(".uni-icon", c).textContent = u.icon;
+  $("h3", c).textContent = u.code;
+  $("p", c).textContent = u.name + " · " + u.city;
+  const b = document.createElement("button");
+  b.className = "uni-btn"; b.type = "button"; b.textContent = "View Material";
+  b.onclick = () => openModal(u);
+  c.append(b); grid.append(c);
+});
+$("#search").addEventListener("input", e => {
+  const q = e.target.value.trim().toLowerCase(); let n = 0;
+  $$(".university-card").forEach(c => { const ok = c.dataset.search.includes(q); c.hidden = !ok; if (ok) n++; });
+  $("#empty").hidden = n > 0;
+});
+
+/* ---------- Reveal on scroll + active nav ---------- */
+$$(".resource-card, .section-heading, .notice").forEach(el => el.classList.add("reveal"));
+const io = "IntersectionObserver" in window ? new IntersectionObserver(es => es.forEach(e => {
+  if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
+}), { threshold: .12 }) : null;
+$$(".reveal").forEach(el => io ? io.observe(el) : el.classList.add("in"));
+if ("IntersectionObserver" in window) {
+  const links = $$(".nav-links a");
+  const so = new IntersectionObserver(es => es.forEach(e => {
+    if (e.isIntersecting) links.forEach(a => a.classList.toggle("active", a.getAttribute("href") === "#" + e.target.id));
+  }), { rootMargin: "-45% 0px -50% 0px" });
+  $$("main section[id]").forEach(s => so.observe(s));
+}
+
+/* ---------- Saved material ---------- */
+let saved = store.get("cb_saved", []);
+const isSaved = id => saved.some(s => s.id === String(id));
+function renderSaved() {
+  $("#savedCount").textContent = saved.length;
+  const ul = $("#savedList"); ul.innerHTML = "";
+  if (!saved.length) { const li = document.createElement("li"); li.className = "none"; li.textContent = "Nothing saved yet."; ul.append(li); return; }
+  saved.forEach(s => {
+    const li = document.createElement("li"), a = document.createElement("a"), m = document.createElement("span"), b = document.createElement("button");
+    a.href = s.url; a.target = "_blank"; a.rel = "noopener"; a.textContent = s.title;
+    m.textContent = s.meta;
+    b.className = "star"; b.textContent = "★"; b.setAttribute("aria-label", "Remove from saved");
+    b.onclick = () => { toggleSave(s); };
+    li.append(a, m, b); ul.append(li);
+  });
+}
+function toggleSave(r) {
+  const id = String(r.id);
+  if (isSaved(id)) { saved = saved.filter(s => s.id !== id); toast("Removed from saved"); }
+  else { saved.push({ id, title: r.title, url: r.url, meta: r.meta }); toast("Saved ✓"); }
+  store.set("cb_saved", saved); renderSaved();
+  $$("#resList .star").forEach(b => { if (b.dataset.id === id) b.textContent = isSaved(id) ? "★" : "☆"; });
+}
+renderSaved();
+
+/* ---------- Modal ---------- */
+const modal = $("#modal"), fB = $("#fBranch"), fY = $("#fYear"), tabs = $("#tabs"), list = $("#resList");
+fB.innerHTML = BRANCHES.map(b => `<option>${b}</option>`).join("");
+fY.innerHTML = YEARS.map(y => `<option>${y}</option>`).join("");
+let cur = null, curType = "syllabus", token = 0;
+Object.entries(TYPES).forEach(([k, v]) => {
+  const b = document.createElement("button");
+  b.type = "button"; b.role = "tab"; b.dataset.type = k; b.textContent = v;
+  b.onclick = () => { curType = k; syncTabs(); load(); };
+  tabs.append(b);
+});
+function syncTabs() { $$("button", tabs).forEach(b => b.setAttribute("aria-selected", b.dataset.type === curType)); }
+function note(msg) { list.innerHTML = ""; const li = document.createElement("li"); li.className = "none"; li.textContent = msg; list.append(li); }
+function openModal(u) {
+  cur = u; $("#mTitle").textContent = u.code + " — " + u.name;
+  curType = "syllabus"; syncTabs(); load(); modal.showModal();
+}
+async function load() {
+  const my = ++token, sb = await sbReady;
+  if (!sb) return note("Study material will appear here soon.");
+  note("Loading…");
+  const { data, error } = await sb.from("resources").select("*")
+    .eq("uni", cur.code).eq("branch", fB.value).eq("year", fY.value).eq("type", curType)
+    .order("created_at", { ascending: false });
+  if (my !== token) return;
+  if (error) return note("Could not load material. Try again.");
+  if (!data.length) return note("No material uploaded yet for this selection.");
+  list.innerHTML = "";
+  data.forEach(r => {
+    const li = document.createElement("li"), a = document.createElement("a"), b = document.createElement("button");
+    a.href = r.url; a.target = "_blank"; a.rel = "noopener"; a.textContent = r.title;
+    b.className = "star"; b.dataset.id = r.id; b.textContent = isSaved(r.id) ? "★" : "☆"; b.setAttribute("aria-label", "Save");
+    b.onclick = () => toggleSave({ id: r.id, title: r.title, url: r.url, meta: [r.uni, r.branch, r.year, TYPES[r.type]].join(" · ") });
+    li.append(a, b); list.append(li);
+  });
+}
+fB.onchange = fY.onchange = load;
+$("#mClose").onclick = () => modal.close();
+modal.addEventListener("click", e => { if (e.target === modal) modal.close(); });
+})();

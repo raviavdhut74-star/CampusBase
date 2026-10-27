@@ -80,3 +80,13 @@ h1{font-size:clamp(2.4rem,6vw,4.2rem);line-height:1.1;margin-bottom:18px}
  .nav-links.open{display:flex}
 }
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}html{scroll-behavior:auto}.reveal{opacity:1;transform:none}}
+.res-list .none{justify-content:center;color:var(--muted)}
+.admin{max-width:760px;margin:auto}
+.admin-form{display:grid;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:24px}
+.admin-form label{display:grid;gap:6px;font-size:.85rem;color:var(--muted)}
+.admin-form select{padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text)}
+.admin-form .search{margin-top:0;border-radius:12px}
+.admin-form button{border:0;cursor:pointer;font-size:1rem}
+.admin-form button:disabled{opacity:.6;cursor:wait}
+.saved-list li span{color:var(--muted);font-size:.8rem}
+.saved-list li a{flex:1}
