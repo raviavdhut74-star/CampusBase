@@ -17,7 +17,7 @@ create table if not exists public.admins (email text primary key);
 alter table public.admins enable row level security;
 
 -- ⚠️ Apla Google email ithe taka:
-insert into public.admins (email) values ('your-email@gmail.com') on conflict do nothing;
+insert into public.admins (email) values ('raviavdhut74@gmail.com') on conflict do nothing;
 
 create or replace function public.is_admin() returns boolean
 language sql stable security definer set search_path = public as $$
