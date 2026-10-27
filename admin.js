@@ -1,73 +1,83 @@
-import { sb, configured, BUCKET } from "./supabase.js";
+import { supabase, BUCKET, CATALOG, isAdmin, toast } from "./supabase.js";
+const $ = (id) => document.getElementById(id);
+const MAX = 20 * 1024 * 1024;
 
-const $ = s => document.querySelector(s);
-const UNIS = ["SPPU", "DBATU", "RTMNU", "SGBAU"];
-const BRANCHES = ["Computer", "IT", "Mechanical", "Civil", "Electrical", "E&TC"];
-const YEARS = ["FE", "SE", "TE", "BE"];
-const TYPES = { syllabus: "Syllabus", notes: "Notes", papers: "Question Papers", imp: "Important Questions" };
-const MAX_MB = 20;
-
-const opts = (el, arr) => el.innerHTML = arr.map(v => Array.isArray(v) ? `<option value="${v[0]}">${v[1]}</option>` : `<option>${v}</option>`).join("");
-opts($("#uni"), UNIS); opts($("#branch"), BRANCHES); opts($("#year"), YEARS); opts($("#type"), Object.entries(TYPES));
-
-let toastT;
-function toast(m) { const t = $("#toast"); t.textContent = m; t.classList.add("show"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("show"), 2500); }
+function fill(id, items) {
+  $(id).replaceChildren(...items.map((v) => new Option(v, v)));
+}
 
 async function loadList() {
-  const { data, error } = await sb.from("resources").select("*").order("created_at", { ascending: false });
-  if (error) return toast(error.message);
-  const ul = $("#list"); ul.innerHTML = "";
-  if (!data.length) { ul.innerHTML = '<li class="none">Kahi upload kele nahi.</li>'; return; }
-  data.forEach(r => {
-    const li = document.createElement("li"), a = document.createElement("a"), s = document.createElement("span"), b = document.createElement("button");
-    a.href = r.url; a.target = "_blank"; a.rel = "noopener"; a.textContent = r.title;
-    s.textContent = [r.uni, r.branch, r.year, TYPES[r.type] || r.type].join(" · ");
-    b.className = "star"; b.textContent = "🗑"; b.setAttribute("aria-label", "Delete");
-    b.onclick = async () => {
-      if (!confirm('Delete "' + r.title + '"?')) return;
-      if (r.path) await sb.storage.from(BUCKET).remove([r.path]);
-      const { error: e } = await sb.from("resources").delete().eq("id", r.id);
-      toast(e ? e.message : "Deleted"); loadList();
-    };
-    li.append(a, s, b); ul.append(li);
-  });
+  const { data, error } = await supabase.from("resources").select("*").order("created_at", { ascending: false });
+  const ul = $("list");
+  ul.replaceChildren();
+  if (error) { toast(error.message); return; }
+  if (!data.length) {
+    const li = document.createElement("li"); li.className = "none"; li.textContent = "Abhi koi PDF upload nahi hui.";
+    ul.append(li); return;
+  }
+  for (const r of data) {
+    const li = document.createElement("li");
+    const a = document.createElement("a");
+    a.href = r.file_url; a.target = "_blank"; a.rel = "noopener"; a.textContent = r.title;
+    const meta = document.createElement("span");
+    meta.textContent = `${r.university} · ${r.branch} · ${r.year} · ${r.type}`;
+    const del = document.createElement("button");
+    del.className = "danger-btn"; del.textContent = "Delete";
+    del.onclick = () => removeItem(r, del);
+    li.append(a, meta, del);
+    ul.append(li);
+  }
 }
 
-if (!configured) {
-  $("#msg").textContent = "supabase.js madhe Supabase config bhara."; $("#authBtn").disabled = true;
-} else {
-  $("#authBtn").onclick = async () => {
-    const { data } = await sb.auth.getSession();
-    data.session ? sb.auth.signOut() : sb.auth.signInWithOAuth({ provider: "google", options: { redirectTo: location.href } });
-  };
-  sb.auth.onAuthStateChange((_e, session) => {
-    setTimeout(async () => {            // callback madhe thet await kela tar deadlock hou shakto
-      const u = session?.user;
-      $("#authBtn").textContent = u ? "Logout" : "Login with Google";
-      let ok = false;
-      if (u) ok = (await sb.rpc("is_admin")).data === true;
-      $("#panel").hidden = !ok; $("#msg").hidden = ok;
-      $("#msg").textContent = u ? "Ha account admin nahi." : "Admin login kara.";
-      if (ok) loadList();
-    }, 0);
-  });
+async function removeItem(r, btn) {
+  if (!confirm(`"${r.title}" delete karna hai?`)) return;
+  btn.disabled = true;
+  const { error: e1 } = await supabase.storage.from(BUCKET).remove([r.file_path]);
+  if (e1) { toast("File delete nahi hui: " + e1.message); btn.disabled = false; return; }
+  const { error: e2 } = await supabase.from("resources").delete().eq("id", r.id);
+  if (e2) { toast(e2.message); btn.disabled = false; return; }
+  toast("Deleted ✓");
+  loadList();
 }
 
-$("#form").addEventListener("submit", async e => {
+$("form").addEventListener("submit", async (e) => {
   e.preventDefault();
-  const f = $("#file").files[0];
-  if (!f || f.type !== "application/pdf") return toast("Fakt PDF file nivda");
-  if (f.size > MAX_MB * 1048576) return toast("File " + MAX_MB + " MB peksha lahan pahije");
-  const meta = { uni: $("#uni").value, branch: $("#branch").value, year: $("#year").value, type: $("#type").value, title: $("#title").value.trim() };
-  const path = `${meta.uni}/${Date.now()}-${f.name.replace(/[^\w.-]/g, "_")}`;
-  $("#submit").disabled = true; $("#bar").hidden = false; $("#bar").removeAttribute("value");   // indeterminate
-  try {
-    const up = await sb.storage.from(BUCKET).upload(path, f, { contentType: "application/pdf" });
-    if (up.error) throw up.error;
-    const { data } = sb.storage.from(BUCKET).getPublicUrl(path);
-    const ins = await sb.from("resources").insert({ ...meta, url: data.publicUrl, path });
-    if (ins.error) { await sb.storage.from(BUCKET).remove([path]); throw ins.error; }
-    toast("Upload zale ✓"); $("#form").reset(); loadList();
-  } catch (er) { toast(er.message); }
-  $("#submit").disabled = false; $("#bar").hidden = true;
+  const file = $("file").files[0];
+  if (!file) return;
+  if (file.type !== "application/pdf") { toast("Sirf PDF allowed hai"); return; }
+  if (file.size > MAX) { toast("File 20 MB se badi hai"); return; }
+  const btn = $("submit"); btn.disabled = true; btn.textContent = "Uploading…";
+
+  const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const path = `${crypto.randomUUID()}-${safe}`;
+  const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file, { contentType: "application/pdf" });
+  if (upErr) { toast("Upload fail: " + upErr.message); btn.disabled = false; btn.textContent = "Upload"; return; }
+
+  const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(path);
+  const { error } = await supabase.from("resources").insert({
+    university: $("uni").value, branch: $("branch").value, year: $("year").value, type: $("type").value,
+    title: $("title").value.trim(), file_path: path, file_url: pub.publicUrl,
+  });
+  if (error) {
+    await supabase.storage.from(BUCKET).remove([path]); // orphan file hata do
+    toast(error.message);
+  } else {
+    toast("Upload ho gaya ✓");
+    $("form").reset();
+    loadList();
+  }
+  btn.disabled = false; btn.textContent = "Upload";
 });
+
+$("logout").onclick = async () => { await supabase.auth.signOut(); location.replace("admin-login.html"); };
+
+(async () => {
+  if (!(await isAdmin())) { location.replace("admin-login.html"); return; }
+  const { data: { session } } = await supabase.auth.getSession();
+  $("who").textContent = session.user.email;
+  $("logout").hidden = false;
+  fill("uni", CATALOG.universities); fill("branch", CATALOG.branches);
+  fill("year", CATALOG.years); fill("type", CATALOG.types);
+  $("msg").hidden = true; $("panel").hidden = false;
+  loadList();
+})();
