@@ -3,32 +3,84 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0b1020">
 <title>Login / Register | CampusBase</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header class="navbar">
-  <a href="index.html" class="logo"><span class="logo-icon">C</span><span>Campus<span class="highlight">Base</span></span></a>
-  <a href="admin-login.html" class="uni-btn">Admin</a>
-</header>
-<main class="auth-wrap">
-  <section class="auth-card">
-    <div class="tabs auth-tabs" role="tablist">
-      <button id="tabLogin" role="tab" aria-selected="true">Login</button>
-      <button id="tabReg" role="tab" aria-selected="false">Register</button>
+<main class="auth-shell">
+  <aside class="auth-side">
+    <a href="index.html" class="logo"><span class="logo-icon">C</span><span>Campus<span class="highlight">Base</span></span></a>
+    <div class="auth-copy">
+      <span class="tag">STUDENT PORTAL</span>
+      <h1>Your campus,<br><span class="highlight">one login away.</span></h1>
+      <p>Create a free account to explore syllabus, notes and previous year papers for your university.</p>
     </div>
-    <form id="form" class="admin-form" novalidate>
-      <h2 id="title">Welcome back</h2>
-      <label id="nameRow" hidden>Full name <input id="name" class="search" maxlength="60" autocomplete="name" placeholder="Your name"></label>
-      <label>Email <input id="email" type="email" class="search" required autocomplete="email" placeholder="you@example.com"></label>
-      <label>Password <input id="password" type="password" class="search" required minlength="6" autocomplete="current-password" placeholder="Min 6 characters"></label>
-      <label id="pass2Row" hidden>Confirm password <input id="password2" type="password" class="search" autocomplete="new-password" placeholder="Repeat password"></label>
-      <p class="form-msg" id="msg" role="alert"></p>
-      <button class="primary-btn" id="submit" type="submit">Login</button>
-    </form>
+    <ul class="auth-points">
+      <li><span>📋</span> University-wise syllabus</li>
+      <li><span>📚</span> Subject-wise study notes</li>
+      <li><span>📝</span> Previous year question papers</li>
+      <li><span>⭐</span> Important questions for exams</li>
+    </ul>
+    <a href="index.html" class="back-link">← Back to home</a>
+  </aside>
+
+  <section class="auth-main">
+    <div class="auth-card">
+      <div class="tabs" id="authTabs" role="tablist">
+        <button type="button" id="tabLogin" role="tab" aria-selected="true">Login</button>
+        <button type="button" id="tabReg" role="tab" aria-selected="false">Register</button>
+      </div>
+
+      <form id="form" novalidate>
+        <div class="auth-head"><h2 id="title">Welcome back</h2><p class="hint" id="sub"></p></div>
+
+        <div class="field" id="nameRow" hidden>
+          <label for="name">Full name</label>
+          <input id="name" class="input" maxlength="60" autocomplete="name" placeholder="Your full name">
+        </div>
+
+        <div class="row2" id="regRow" hidden>
+          <div class="field"><label for="mobile">Mobile</label>
+            <input id="mobile" class="input" type="tel" inputmode="numeric" maxlength="10" autocomplete="tel-national" placeholder="10-digit number"></div>
+          <div class="field"><label for="year">Year</label>
+            <select id="year" class="input"></select></div>
+        </div>
+
+        <div class="field" id="uniRow" hidden>
+          <label for="uni">University</label>
+          <select id="uni" class="input"></select>
+        </div>
+
+        <div class="field" id="emailRow">
+          <label for="email">Email</label>
+          <input id="email" type="email" class="input" autocomplete="email" placeholder="you@example.com">
+        </div>
+
+        <div class="field" id="passRow">
+          <label for="password">Password</label>
+          <div class="pw">
+            <input id="password" type="password" class="input" autocomplete="current-password" placeholder="Min 8 characters">
+            <button type="button" class="eye" data-eye="password" aria-label="Show password">👁</button>
+          </div>
+        </div>
+
+        <div class="field" id="pass2Row" hidden>
+          <label for="password2">Confirm password</label>
+          <div class="pw">
+            <input id="password2" type="password" class="input" autocomplete="new-password" placeholder="Repeat password">
+            <button type="button" class="eye" data-eye="password2" aria-label="Show password">👁</button>
+          </div>
+        </div>
+
+        <a href="#" class="link" id="forgotLink">Forgot password?</a>
+        <p class="form-msg" id="msg" role="alert"></p>
+        <button class="primary-btn full" id="submit" type="submit">Login</button>
+        <a href="#" class="link" id="backLink" hidden>← Back to login</a>
+      </form>
+    </div>
   </section>
 </main>
-<div class="toast" id="toast" role="status"></div>
 <script type="module" src="auth.js"></script>
 </body>
 </html>

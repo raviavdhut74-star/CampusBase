@@ -1,18 +1,11 @@
+import { CATALOG } from "./catalog.js";
 (() => {
 "use strict";
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
-/* ---------- Data (admin.js shi match asaleli pahije) ---------- */
-const UNIS = [
-  { code: "SPPU",  name: "Savitribai Phule Pune University",          city: "Pune",    icon: "🏛️" },
-  { code: "DBATU", name: "Dr. Babasaheb Ambedkar Technological University", city: "Lonere", icon: "🎓" },
-  { code: "RTMNU", name: "Rashtrasant Tukadoji Maharaj Nagpur University", city: "Nagpur", icon: "📖" },
-  { code: "SGBAU", name: "Sant Gadge Baba Amravati University",       city: "Amravati", icon: "🏫" }
-];
-const BRANCHES = ["Computer", "IT", "Mechanical", "Civil", "Electrical", "E&TC"];
-const YEARS = ["FE", "SE", "TE", "BE"];
-const TYPES = { syllabus: "Syllabus", notes: "Notes", papers: "Question Papers", imp: "Important Questions" };
+/* ---------- Data (catalog.js madhun) ---------- */
+const UNIS = CATALOG.universities, BRANCHES = CATALOG.branches, YEARS = CATALOG.years, TYPES = CATALOG.types;
 
 /* ---------- Helpers ---------- */
 const store = {
@@ -24,7 +17,7 @@ function toast(m) {
   const t = $("#toast"); t.textContent = m; t.classList.add("show");
   clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("show"), 2200);
 }
-const sbReady = import("./supabase.js").then(m => m.sb).catch(() => null);
+const sbReady = import("./supabase.js").then(m => m.supabase).catch(() => null);
 
 /* ---------- Theme ---------- */
 const root = document.documentElement;
@@ -121,10 +114,10 @@ renderSaved();
 const modal = $("#modal"), fB = $("#fBranch"), fY = $("#fYear"), tabs = $("#tabs"), list = $("#resList");
 fB.innerHTML = BRANCHES.map(b => `<option>${b}</option>`).join("");
 fY.innerHTML = YEARS.map(y => `<option>${y}</option>`).join("");
-let cur = null, curType = "syllabus", token = 0;
-Object.entries(TYPES).forEach(([k, v]) => {
+let cur = null, curType = TYPES[0], token = 0;
+TYPES.forEach(k => {
   const b = document.createElement("button");
-  b.type = "button"; b.role = "tab"; b.dataset.type = k; b.textContent = v;
+  b.type = "button"; b.role = "tab"; b.dataset.type = k; b.textContent = k;
   b.onclick = () => { curType = k; syncTabs(); load(); };
   tabs.append(b);
 });
@@ -132,14 +125,14 @@ function syncTabs() { $$("button", tabs).forEach(b => b.setAttribute("aria-selec
 function note(msg) { list.innerHTML = ""; const li = document.createElement("li"); li.className = "none"; li.textContent = msg; list.append(li); }
 function openModal(u) {
   cur = u; $("#mTitle").textContent = u.code + " — " + u.name;
-  curType = "syllabus"; syncTabs(); load(); modal.showModal();
+  curType = TYPES[0]; syncTabs(); load(); modal.showModal();
 }
 async function load() {
   const my = ++token, sb = await sbReady;
   if (!sb) return note("Study material will appear here soon.");
   note("Loading…");
   const { data, error } = await sb.from("resources").select("*")
-    .eq("uni", cur.code).eq("branch", fB.value).eq("year", fY.value).eq("type", curType)
+    .eq("university", cur.code).eq("branch", fB.value).eq("year", fY.value).eq("type", curType)
     .order("created_at", { ascending: false });
   if (my !== token) return;
   if (error) return note("Could not load material. Try again.");
@@ -147,9 +140,9 @@ async function load() {
   list.innerHTML = "";
   data.forEach(r => {
     const li = document.createElement("li"), a = document.createElement("a"), b = document.createElement("button");
-    a.href = r.url; a.target = "_blank"; a.rel = "noopener"; a.textContent = r.title;
+    a.href = r.file_url; a.target = "_blank"; a.rel = "noopener"; a.textContent = r.title;
     b.className = "star"; b.dataset.id = r.id; b.textContent = isSaved(r.id) ? "★" : "☆"; b.setAttribute("aria-label", "Save");
-    b.onclick = () => toggleSave({ id: r.id, title: r.title, url: r.url, meta: [r.uni, r.branch, r.year, TYPES[r.type]].join(" · ") });
+    b.onclick = () => toggleSave({ id: r.id, title: r.title, url: r.file_url, meta: [r.university, r.branch, r.year, r.type].join(" · ") });
     li.append(a, b); list.append(li);
   });
 }

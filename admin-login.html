@@ -3,27 +3,36 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
 <title>Admin Login | CampusBase</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header class="navbar">
-  <a href="index.html" class="logo"><span class="logo-icon">C</span><span>Campus<span class="highlight">Base</span> Admin</span></a>
-  <a href="auth.html" class="uni-btn">Student login</a>
-</header>
-<main class="auth-wrap">
-  <section class="auth-card">
-    <form id="form" class="admin-form" novalidate>
-      <h2>🔐 Admin Login</h2>
-      <p class="hint">Sirf 2 authorised admin hi PDFs upload / delete kar sakte hain.</p>
-      <label>Admin email <input id="email" type="email" class="search" required autocomplete="email"></label>
-      <label>Password <input id="password" type="password" class="search" required autocomplete="current-password"></label>
-      <p class="form-msg" id="msg" role="alert"></p>
-      <button class="primary-btn" id="submit" type="submit">Login as Admin</button>
-    </form>
+<main class="auth-shell">
+  <aside class="auth-side">
+    <a href="index.html" class="logo"><span class="logo-icon">C</span><span>Campus<span class="highlight">Base</span> Admin</span></a>
+    <div class="auth-copy">
+      <span class="tag">ADMIN ONLY</span>
+      <h1>Manage <span class="highlight">study material.</span></h1>
+      <p>Only the 2 authorised admins can upload or delete PDFs.</p>
+    </div>
+    <a href="auth.html" class="back-link">← Student login</a>
+  </aside>
+  <section class="auth-main">
+    <div class="auth-card">
+      <form id="form" novalidate>
+        <div class="auth-head"><h2>🔐 Admin Login</h2><p class="hint">Use your admin email and password.</p></div>
+        <div class="field"><label for="email">Admin email</label>
+          <input id="email" type="email" class="input" required autocomplete="email"></div>
+        <div class="field"><label for="password">Password</label>
+          <div class="pw"><input id="password" type="password" class="input" required autocomplete="current-password">
+          <button type="button" class="eye" data-eye="password" aria-label="Show password">👁</button></div></div>
+        <p class="form-msg" id="msg" role="alert"></p>
+        <button class="primary-btn full" id="submit" type="submit">Login as Admin</button>
+      </form>
+    </div>
   </section>
 </main>
-<div class="toast" id="toast" role="status"></div>
 <script type="module" src="admin-login.js"></script>
 </body>
 </html>
