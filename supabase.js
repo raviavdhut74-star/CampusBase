@@ -1,21 +1,25 @@
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm";
-export { CATALOG } from "./catalog.js";
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
-// Supabase → Project Settings → API. Fakt anon (public) key; service_role kadhi nahi.
-const SUPABASE_URL = "https://izymhzznimxuckkctwqx.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml6eW1oenpuaW14dWNra2N0d3F4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMwODAxNjgsImV4cCI6MjEwODY1NjE2OH0.sdaB3yQgMg-2UpAL4kfemWLhEnVI55xGNJNYiwqkueI";
+// 👉 Supabase → Project Settings → API se yahan paste karo (service_role kabhi nahi)
+const SUPABASE_URL = "https://YOUR-PROJECT.supabase.co";
+const SUPABASE_ANON_KEY = "YOUR-ANON-PUBLIC-KEY";
 
-export const configured = !SUPABASE_URL.includes("YOUR-");
-export const supabase = configured ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 export const BUCKET = "pdfs";
 
-// setup.sql madhil is_admin() vaparto: email confirmed + admins list madhe asel tarach true
+// ⚠️ Ye lists script.js wali lists jaisi hi rakho
+export const CATALOG = {
+  universities: ["SPPU (Pune)", "DBATU", "Mumbai University", "Shivaji University"],
+  branches: ["Computer", "IT", "Mechanical", "Civil", "Electrical", "E&TC", "Chemical", "AI & DS"],
+  years: ["FE", "SE", "TE", "BE"],
+  types: ["Syllabus", "Notes", "Question Papers", "Important Questions"],
+};
+
 export async function isAdmin() {
-  if (!supabase) return false;
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return false;
-  const { data, error } = await supabase.rpc("is_admin");
-  return !error && data === true;
+  const { data } = await supabase.from("admins").select("email").limit(1);
+  return !!(data && data.length);
 }
 
 export function toast(text) {

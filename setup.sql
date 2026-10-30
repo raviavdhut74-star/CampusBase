@@ -1,7 +1,5 @@
 -- CampusBase: 2 admins + PDFs (Supabase SQL Editor me run karo)
--- 1) Neeche dono admin emails apni EKHADYA KHARYA emails ni badla (placeholder rahu deu naka).
--- 2) Jar aadhi junya setup.sql run kela asel tar pahile hi ek line run kara:
---      drop table if exists public.resources;
+-- 1) Neeche dono admin emails apni emails se badlo.
 
 -- ===== Admins table (max 2) =====
 create table if not exists public.admins (email text primary key);
@@ -10,13 +8,10 @@ alter table public.admins enable row level security;
 create or replace function public.limit_admins() returns trigger
 language plpgsql as $$
 begin
-  new.email := lower(new.email);
-  if exists (select 1 from public.admins where email = new.email) then
-    return null;                       -- already ahe: SQL punha run kela tari chalte
-  end if;
   if (select count(*) from public.admins) >= 2 then
     raise exception 'Maximum 2 admins allowed';
   end if;
+  new.email := lower(new.email);
   return new;
 end $$;
 

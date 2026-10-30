@@ -3,7 +3,7 @@ const $ = (id) => document.getElementById(id);
 const MAX = 20 * 1024 * 1024;
 
 function fill(id, items) {
-  $(id).replaceChildren(...items.map((v) => typeof v === "string" ? new Option(v, v) : new Option(v.code + " · " + v.city, v.code)));
+  $(id).replaceChildren(...items.map((v) => new Option(v, v)));
 }
 
 async function loadList() {
