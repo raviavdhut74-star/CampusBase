@@ -1,12 +1,17 @@
-// Ek hi jagah list — site (script.js), admin aur auth teeno yahi vaparatat.
+// Lists & settings used across the site — change them here only.
+
 export const CATALOG = {
-  universities: [
-    { code: "SPPU",  name: "Savitribai Phule Pune University",                city: "Pune",     icon: "🏛️" },
-    { code: "DBATU", name: "Dr. Babasaheb Ambedkar Technological University", city: "Lonere",   icon: "🎓" },
-    { code: "RTMNU", name: "Rashtrasant Tukadoji Maharaj Nagpur University",  city: "Nagpur",   icon: "📖" },
-    { code: "SGBAU", name: "Sant Gadge Baba Amravati University",             city: "Amravati", icon: "🏫" }
-  ],
-  branches: ["Computer", "IT", "Mechanical", "Civil", "Electrical", "E&TC", "Chemical", "AI & DS"],
+  universities: ["SPPU (Pune)", "DBATU", "Mumbai University", "Shivaji University"],
+  branches: ["AI & ML", "AI & DS", "Computer", "IT", "Mechanical", "Civil", "Electrical", "E&TC", "Chemical"],
   years: ["FE", "SE", "TE", "BE"],
-  types: ["Syllabus", "Notes", "Question Papers", "Important Questions"]
+  types: ["Notes", "Handwritten Notes", "Question Bank", "Answer Bank", "Formula Notes", "Previous Year Papers", "Books"],
+};
+
+export const YL = { FE: "First Year", SE: "Second Year", TE: "Third Year", BE: "Final Year" };
+
+// Social links are OFF. To enable: set on: true and add the url.
+export const SOCIAL = {
+  instagram: { on: false, url: "" },
+  whatsapp: { on: false, url: "" },
+  telegram: { on: false, url: "" },
 };
