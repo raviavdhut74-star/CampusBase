@@ -43,7 +43,7 @@ function go(a){if(a==="soon")return soon();if(a==="home"){location.hash="home";s
 
 // routing
 function route(){const h=location.hash.slice(1)||"home",u=me();let v="home";
-  if(h==="login"||h==="master"){if(u){location.hash=u.admin?"admin":"home";return}v="auth";setMode(h==="master"?"master":(mode==="register"?"register":"login"))}
+  if(h==="login"||h==="master"){if(u){location.hash=u.admin?"admin":"home";return}v="auth";setMode(h==="master"?(mode==="adreg"?"adreg":"master"):(mode==="register"?"register":"login"))}
   else if(h==="admin"){if(u&&u.admin)v="admin";else{location.hash="master";return}}
   document.querySelectorAll(".view").forEach(s=>s.hidden=s.id!=="v-"+v);$("backBtn").hidden=v==="home";
   if(v==="home")home();if(v==="admin"){$("who").textContent="Signed in as admin: "+u.email;list()}
@@ -103,14 +103,15 @@ $("profBtn").onclick=()=>profile();$("sheet").addEventListener("click",e=>{if(e.
 let mode="login";fill("aUni",C.unis);fill("aBranch",C.branches);fill("aYear",C.years,YL);
 const MODES={login:["Welcome Back","Login via Email or PRN Number","Email Address or PRN Number","Login","Don't have an account?","Sign up","register"],
  register:["Create Account","Register with your PRN Number","PRN Number","Register","Already registered?","Login","login"],
- master:["Master Login","Admins only — upload & manage files","Admin Email","Login as Admin","Not an admin?","Student login","login"]};
-function setMode(m){mode=m;const d=MODES[m],adm=m==="master";
+ master:["Master Login","Admins only — upload & manage files","Admin Email","Login as Admin","New admin?","Admin register","adreg"],
+ adreg:["Admin Register","Only 2 admins allowed — admin code required","Admin Email","Register as Admin","Already an admin?","Master login","master"]};
+function setMode(m){mode=m;const d=MODES[m],adm=m==="master"||m==="adreg";
   $("aTitle").textContent=d[0];$("aSub").textContent=d[1];$("idLbl").textContent=d[2];$("aSubmit").textContent=d[3];$("swapTxt").textContent=d[4];$("swap").textContent=d[5];
-  $("regRows").hidden=m!=="register";$("toReg").textContent=m==="register"?"Login":"Sign Up";$("toReg").hidden=adm;
-  $("mLbl").textContent=adm?"Student Login":"Master Login";$("forgot").hidden=false;$("aId").type=adm?"email":"text";$("aMsg").textContent="";$("aMsg").style.color="";
-  $("aPass").autocomplete=m==="register"?"new-password":"current-password"}
-$("swap").onclick=()=>mode==="master"?(location.hash="login"):setMode(MODES[mode][6]);$("toReg").onclick=()=>setMode(mode==="register"?"login":"register");
-$("masterLink").onclick=()=>{location.hash=mode==="master"?"login":"master"};
+  $("regRows").hidden=m!=="register";$("admRow").hidden=m!=="adreg";$("toReg").textContent=m==="register"?"Login":"Sign Up";$("toReg").hidden=adm;
+  $("mLbl").textContent=adm?"Student Login":"Master Login";$("forgot").hidden=m==="adreg";$("aId").type=adm?"email":"text";$("aMsg").textContent="";$("aMsg").style.color="";
+  $("aPass").autocomplete=m==="register"||m==="adreg"?"new-password":"current-password"}
+$("swap").onclick=()=>setMode(MODES[mode][6]);$("toReg").onclick=()=>setMode(mode==="register"?"login":"register");
+$("masterLink").onclick=()=>{location.hash=mode==="master"||mode==="adreg"?"login":"master"};
 $("forgot").onclick=async()=>{const id=$("aId").value.trim();if(!id.includes("@"))return toast("Enter your email above, then tap Forgot password");
   const{error}=await supabase.auth.resetPasswordForEmail(id,{redirectTo:location.href.split("#")[0]});toast(error?error.message:"Password reset link sent to your email")};
 $("joinBtn").onclick=()=>social("whatsapp");
@@ -134,7 +135,10 @@ async function doAuth(id,pw,m,form){const em=id.toLowerCase();
   else if(mode==="master"){const{error}=await supabase.auth.signInWithPassword({email:em,password:pw});if(error)return m.textContent="Wrong admin email or password.";
     await load();if(!S.admin){await supabase.auth.signOut();await load();return m.textContent="This account is not an admin."}
     form.reset();location.hash="admin";route()}
-}
+  else{const n=$("adName").value.trim();if(!n||!/^\S+@\S+\.\S+$/.test(em))return m.textContent="Enter admin name and a valid email.";
+    const{data,error}=await supabase.auth.signUp({email:em,password:pw,options:{data:{name:n,admin_code:$("adCode").value},emailRedirectTo:location.href.split("#")[0]}});
+    if(error)return m.textContent="Invalid admin code, email already used, or the 2-admin limit is reached.";
+    form.reset();if(data.session){await load();location.hash=S.admin?"admin":"home";route()}else{setMode("master");ok(m,"Admin account created! Confirm your email, then use Master Login.")}}}
 $("adOut").onclick=logout;
 
 // admin: upload (any file) / delete
