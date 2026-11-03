@@ -2,8 +2,8 @@
 import { supabase, BUCKET, CATALOG, isAdmin } from "./supabase.js";
 
 // Social links are OFF for now. Set on:true and a url to enable later.
-const SOCIAL={instagram:{on:false,url:""},whatsapp:{on:false,url:""},telegram:{on:false,url:""}};
-const C={unis:CATALOG.universities,branches:[...new Set(["AI & ML",...CATALOG.branches])],years:CATALOG.years,
+const SOCIAL={instagram:{on:false,url:""},whatsapp:{on:true,url:"https://chat.whatsapp.com/ICt2INQ4g2JEKB8urgboBd"},telegram:{on:true,url:"https://t.me/campusbase_study_material"}};
+const C={unis:["SPPU","BATU","SGBBU","AKTU"],branches:[...new Set(["AI & ML",...CATALOG.branches])],years:CATALOG.years,
   types:[...new Set(["Notes","Handwritten Notes","Question Bank","Answer Bank","Formula Notes","Previous Year Papers","Books",...CATALOG.types])]};
 const YL={FE:"First Year",SE:"Second Year",TE:"Third Year",BE:"Final Year"};
 const $=id=>document.getElementById(id);
@@ -26,7 +26,7 @@ async function logout(){await supabase.auth.signOut();await load();toast("Logged
 
 // theme
 const setTheme=d=>{document.documentElement.dataset.theme=d?"dark":"light";$("themeBtn").textContent=d?"🌙":"☀️"};
-setTheme(matchMedia("(prefers-color-scheme: dark)").matches);$("themeBtn").onclick=()=>setTheme(document.documentElement.dataset.theme!=="dark");
+const th=(()=>{try{return localStorage.getItem("cb2_theme")}catch{return null}})();setTheme(th!=="light");$("themeBtn").onclick=()=>{const d=document.documentElement.dataset.theme!=="dark";setTheme(d);try{localStorage.setItem("cb2_theme",d?"dark":"light")}catch{}};
 
 // drawer
 const T=t=>"type:"+t;
@@ -34,7 +34,7 @@ const MENU=[["👥","Social Mode","soon"],["🏠","Home","home"],["📗","Notes"
 function drawer(){const u=me();
   $("dUser").innerHTML=avatar(u)+`<div><b>${esc(u?u.name:"Guest")}</b><div class="muted">${esc(u?u.branch:"Please login")}</div></div>`;
   const l=$("dList");l.innerHTML="";
-  (u&&u.admin?[["📤","Upload Files","admin"],...MENU]:MENU).forEach(([i,t,a])=>{const li=document.createElement("li"),b=mk("button",null,/^(soon|s:)/.test(a)?"off":"");b.innerHTML=`<span style="width:22px;text-align:center">${i}</span>${esc(t)}`;b.onclick=()=>{go(a);setDrawer(false)};li.append(b);l.append(li)});
+  (u&&u.admin?[["📤","Upload Files","admin"],...MENU]:MENU).forEach(([i,t,a])=>{const li=document.createElement("li"),b=mk("button",null,(a==="soon"||(a.startsWith("s:")&&!SOCIAL[a.slice(2)].on))?"off":"");b.innerHTML=`<span style="width:22px;text-align:center">${i}</span>${esc(t)}`;b.onclick=()=>{go(a);setDrawer(false)};li.append(b);l.append(li)});
   const li=document.createElement("li"),b=mk("button",u?"⎋  Logout":"⎋  Login / Register","lo");b.onclick=()=>{setDrawer(false);u?logout():(location.hash="login")};li.append(b);l.append(li)}
 const setDrawer=o=>{$("drawer").classList.toggle("on",o);$("scrim").classList.toggle("on",o)};
 $("burger").onclick=()=>{drawer();setDrawer(true)};$("scrim").onclick=()=>setDrawer(false);
@@ -43,7 +43,7 @@ function go(a){if(a==="soon")return soon();if(a==="home"){location.hash="home";s
 
 // routing
 function route(){const h=location.hash.slice(1)||"home",u=me();let v="home";
-  if(h==="login"||h==="master"){if(u){location.hash=u.admin?"admin":"home";return}v="auth";setMode(h==="master"?(mode==="adreg"?"adreg":"master"):(mode==="register"?"register":"login"))}
+  if(h==="login"||h==="master"){if(u){location.hash=u.admin?"admin":"home";return}v="auth";setMode(h==="master"?"master":(mode==="register"?"register":"login"))}
   else if(h==="admin"){if(u&&u.admin)v="admin";else{location.hash="master";return}}
   document.querySelectorAll(".view").forEach(s=>s.hidden=s.id!=="v-"+v);$("backBtn").hidden=v==="home";
   if(v==="home")home();if(v==="admin"){$("who").textContent="Signed in as admin: "+u.email;list()}
@@ -103,15 +103,20 @@ $("profBtn").onclick=()=>profile();$("sheet").addEventListener("click",e=>{if(e.
 let mode="login";fill("aUni",C.unis);fill("aBranch",C.branches);fill("aYear",C.years,YL);
 const MODES={login:["Welcome Back","Login via Email or PRN Number","Email Address or PRN Number","Login","Don't have an account?","Sign up","register"],
  register:["Create Account","Register with your PRN Number","PRN Number","Register","Already registered?","Login","login"],
- master:["Master Login","Admins only — upload & manage files","Admin Email","Login as Admin","New admin?","Admin register","adreg"],
- adreg:["Admin Register","Only 2 admins allowed — admin code required","Admin Email","Register as Admin","Already an admin?","Master login","master"]};
-function setMode(m){mode=m;const d=MODES[m],adm=m==="master"||m==="adreg";
+ master:["Admin Login","Admins only — upload & manage files","Admin Email","Login as Admin","Not an admin?","Student login","login"]};
+function setMode(m){mode=m;const d=MODES[m],adm=m==="master";
   $("aTitle").textContent=d[0];$("aSub").textContent=d[1];$("idLbl").textContent=d[2];$("aSubmit").textContent=d[3];$("swapTxt").textContent=d[4];$("swap").textContent=d[5];
-  $("regRows").hidden=m!=="register";$("admRow").hidden=m!=="adreg";$("toReg").textContent=m==="register"?"Login":"Sign Up";$("toReg").hidden=adm;
-  $("mLbl").textContent=adm?"Student Login":"Master Login";$("forgot").hidden=m==="adreg";$("aId").type=adm?"email":"text";$("aMsg").textContent="";$("aMsg").style.color="";
-  $("aPass").autocomplete=m==="register"||m==="adreg"?"new-password":"current-password"}
-$("swap").onclick=()=>setMode(MODES[mode][6]);$("toReg").onclick=()=>setMode(mode==="register"?"login":"register");
-$("masterLink").onclick=()=>{location.hash=mode==="master"||mode==="adreg"?"login":"master"};
+  $("regRows").hidden=m!=="register";$("toReg").textContent=m==="register"?"Login":"Sign Up";$("toReg").hidden=adm;$("neon").classList.toggle("reg",m==="register");$("nWelcome").innerHTML=m==="register"?"WELCOME!":m==="master"?"ADMIN<br>ACCESS":"WELCOME<br>BACK!";
+  $("mLbl").textContent=adm?"Student Login":"Admin Login";$("forgot").hidden=false;$("aId").type=adm?"email":"text";$("aMsg").textContent="";$("aMsg").style.color="";
+  $("aPass").autocomplete=m==="register"?"new-password":"current-password"}
+$("toReg").onclick=()=>setMode(mode==="register"?"login":"register");
+function flip(act){const n=$("neon");if(n.classList.contains("busy"))return;n.classList.add("busy");
+  setTimeout(()=>{const was=n.classList.contains("reg");act();const is=n.classList.contains("reg"),ch=is!==was;
+    n.classList.remove("to-reg","to-login");void n.offsetWidth;if(ch)n.classList.add(is?"to-reg":"to-login");
+    setTimeout(()=>n.classList.remove("busy","to-reg","to-login"),ch?800:250)},320)}
+const goMode=m=>flip(()=>{setMode(m);const h=m==="master"?"master":"login";if(location.hash.slice(1)!==h)location.hash=h});
+$("swap").onclick=()=>goMode(mode==="master"?"login":MODES[mode][6]);
+$("masterLink").onclick=()=>goMode(mode==="master"?"login":"master");
 $("forgot").onclick=async()=>{const id=$("aId").value.trim();if(!id.includes("@"))return toast("Enter your email above, then tap Forgot password");
   const{error}=await supabase.auth.resetPasswordForEmail(id,{redirectTo:location.href.split("#")[0]});toast(error?error.message:"Password reset link sent to your email")};
 $("joinBtn").onclick=()=>social("whatsapp");
@@ -135,10 +140,7 @@ async function doAuth(id,pw,m,form){const em=id.toLowerCase();
   else if(mode==="master"){const{error}=await supabase.auth.signInWithPassword({email:em,password:pw});if(error)return m.textContent="Wrong admin email or password.";
     await load();if(!S.admin){await supabase.auth.signOut();await load();return m.textContent="This account is not an admin."}
     form.reset();location.hash="admin";route()}
-  else{const n=$("adName").value.trim();if(!n||!/^\S+@\S+\.\S+$/.test(em))return m.textContent="Enter admin name and a valid email.";
-    const{data,error}=await supabase.auth.signUp({email:em,password:pw,options:{data:{name:n,admin_code:$("adCode").value},emailRedirectTo:location.href.split("#")[0]}});
-    if(error)return m.textContent="Invalid admin code, email already used, or the 2-admin limit is reached.";
-    form.reset();if(data.session){await load();location.hash=S.admin?"admin":"home";route()}else{setMode("master");ok(m,"Admin account created! Confirm your email, then use Master Login.")}}}
+}
 $("adOut").onclick=logout;
 
 // admin: upload (any file) / delete
