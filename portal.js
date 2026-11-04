@@ -16,10 +16,10 @@ const soon=()=>toast("Coming soon 🚀");
 const social=k=>{const s=SOCIAL[k];s.on&&s.url?open(s.url,"_blank","noopener"):soon()};
 
 // ---- session state ----
-const S={user:null,prof:null,admin:false};
-async function load(){const{data:{session}}=await supabase.auth.getSession();S.user=session?session.user:null;S.prof=null;S.admin=false;
-  if(S.user){const[p,a]=await Promise.all([supabase.from("profiles").select("*").eq("id",S.user.id).maybeSingle(),isAdmin()]);S.prof=p.data;S.admin=a}}
-const me=()=>{if(!S.user)return null;const p=S.prof||{};return{name:p.name||S.user.user_metadata?.full_name||S.user.email.split("@")[0],email:S.user.email,prn:p.prn||"—",uni:p.university||C.unis[0],branch:p.branch||C.branches[0],year:p.year||"FE",photo:p.photo,admin:S.admin}};
+const S={user:null,prof:null,admin:false,sub:null};
+async function load(){const{data:{session}}=await supabase.auth.getSession();S.user=session?session.user:null;S.prof=null;S.admin=false;S.sub=null;
+  if(S.user){const[p,a,sb]=await Promise.all([supabase.from("profiles").select("*").eq("id",S.user.id).maybeSingle(),isAdmin(),supabase.from("subscriptions").select("expires_at").eq("user_id",S.user.id).order("expires_at",{ascending:false}).limit(1).maybeSingle()]);S.prof=p.data;S.admin=a;S.sub=sb.data&&new Date(sb.data.expires_at)>new Date()?sb.data.expires_at:null}}
+const me=()=>{if(!S.user)return null;const p=S.prof||{};return{name:p.name||S.user.user_metadata?.full_name||S.user.email.split("@")[0],email:S.user.email,prn:p.prn||"—",uni:p.university||C.unis[0],branch:p.branch||C.branches[0],year:p.year||"FE",photo:p.photo,admin:S.admin,sub:S.sub}};
 const sid=u=>"@"+u.name.toLowerCase().trim().replace(/\s+/g,".");
 const avatar=u=>`<span class="av">${u&&u.photo?`<img src="${esc(u.photo)}" alt="">`:esc(u?u.name[0].toUpperCase():"👤")}</span>`;
 async function logout(){await supabase.auth.signOut();await load();toast("Logged out");location.hash="home";route()}
@@ -30,7 +30,7 @@ const th=(()=>{try{return localStorage.getItem("cb2_theme")}catch{return null}})
 
 // drawer
 const T=t=>"type:"+t;
-const MENU=[["👥","Social Mode","soon"],["🏠","Home","home"],["📗","Notes",T("Notes")],["✍️","Handwritten Notes",T("Handwritten Notes")],["🗄️","Question Bank",T("Question Bank")],["⭐","Answer Bank",T("Answer Bank")],["☑️","MCQ","soon"],["🏆","Leaderboard","soon"],["💬","Doubt Solving","soon"],["√x","Formula Notes",T("Formula Notes")],["📄","Previous Year Papers",T("Previous Year Papers")],["📕","Books",T("Books")],["⬇️","Downloads","soon"],["🎖️","Certificates","soon"],["📝","Revaluation Score","soon"],["🎁","Refer & Earn","soon"],["📱","Download App","soon"],["🧾","Payment Receipt","soon"],["ℹ️","About Us","foot"],["📸","Follow on Instagram","s:instagram"],["💚","Join WhatsApp Group","s:whatsapp"],["✈️","Join Telegram","s:telegram"],["✉️","Contact Us","foot"],["⚙️","Settings","soon"]];
+const MENU=[["⭐","Premium","premium"],["👥","Social Mode","soon"],["🏠","Home","home"],["📗","Notes",T("Notes")],["✍️","Handwritten Notes",T("Handwritten Notes")],["🗄️","Question Bank",T("Question Bank")],["⭐","Answer Bank",T("Answer Bank")],["☑️","MCQ","soon"],["🏆","Leaderboard","soon"],["💬","Doubt Solving","soon"],["√x","Formula Notes",T("Formula Notes")],["📄","Previous Year Papers",T("Previous Year Papers")],["📕","Books",T("Books")],["⬇️","Downloads","soon"],["🎖️","Certificates","soon"],["📝","Revaluation Score","soon"],["🎁","Refer & Earn","soon"],["📱","Download App","soon"],["🧾","Payment Receipt","soon"],["ℹ️","About Us","foot"],["📸","Follow on Instagram","s:instagram"],["💚","Join WhatsApp Group","s:whatsapp"],["✈️","Join Telegram","s:telegram"],["✉️","Contact Us","foot"],["⚙️","Settings","soon"]];
 function drawer(){const u=me();
   $("dUser").innerHTML=avatar(u)+`<div><b>${esc(u?u.name:"Guest")}</b><div class="muted">${esc(u?u.branch:"Please login")}</div></div>`;
   const l=$("dList");l.innerHTML="";
@@ -38,7 +38,7 @@ function drawer(){const u=me();
   const li=document.createElement("li"),b=mk("button",u?"⎋  Logout":"⎋  Login / Register","lo");b.onclick=()=>{setDrawer(false);u?logout():(location.hash="login")};li.append(b);l.append(li)}
 const setDrawer=o=>{$("drawer").classList.toggle("on",o);$("scrim").classList.toggle("on",o)};
 $("burger").onclick=()=>{drawer();setDrawer(true)};$("scrim").onclick=()=>setDrawer(false);
-function go(a){if(a==="soon")return soon();if(a==="home"){location.hash="home";scrollTo(0,0)}else if(a==="admin")location.hash="admin";else if(a==="foot")$("foot").scrollIntoView({behavior:"smooth"});
+function go(a){if(a==="soon")return soon();if(a==="premium")return paywall();if(a==="home"){location.hash="home";scrollTo(0,0)}else if(a==="admin")location.hash="admin";else if(a==="foot")$("foot").scrollIntoView({behavior:"smooth"});
   else if(a.startsWith("s:"))social(a.slice(2));else if(a.startsWith("type:"))browse(a.slice(5))}
 
 // routing
@@ -76,7 +76,9 @@ async function show(){const t=$("tabs");t.replaceChildren();C.types.forEach(x=>{
   const{data,error}=await supabase.from("resources").select("*").eq("university",$("fUni").value).eq("branch",$("fBranch").value).eq("year",$("fYear").value).eq("type",tab).order("created_at",{ascending:false});
   l.replaceChildren();if(error)return l.append(mk("li",error.message,"none"));
   if(!data.length)return l.append(mk("li","Nothing uploaded here yet.","none"));
-  data.forEach(x=>{const li=document.createElement("li"),a=mk("a",x.title);a.href=x.file_url;a.target="_blank";a.rel="noopener";li.append(a);l.append(li)})}
+  const can=!!S.user&&(S.admin||!!S.sub);
+  data.forEach(x=>{const li=document.createElement("li"),a=mk("a",(x.is_free?"🆓 ":can?"":"🔒 ")+x.title);a.href="#";
+    a.onclick=e=>{e.preventDefault();if(!S.user){$("modal").close();toast("Please login first");location.hash="login";return}if(can||x.is_free)openFile(x);else paywall()};li.append(a);l.append(li)})}
 ["fUni","fBranch","fYear"].forEach(i=>$(i).onchange=show);$("mClose").onclick=()=>$("modal").close();
 
 // profile sheet
@@ -91,10 +93,10 @@ function profile(mode){const u=me();if(!u){toast("Please login first");location.
     $("pf").onsubmit=async e=>{e.preventDefault();let p;if(br)p={branch:$("pBranch").value};else{const n=$("pName").value.trim();if(!n)return toast("Name required");p={name:n,university:$("pUni").value,year:$("pYear").value}}
       if(await saveProf(p)){toast("Saved ✓");profile()}}}
   else{b.innerHTML=`<div style="text-align:center"><div class="pav">${avatar(u)}<label title="Change photo">📷<input type="file" id="pPhoto" accept="image/*" hidden></label></div><p class="muted">Tap the camera icon to update your photo.</p>
-    <h2>${esc(u.name)}</h2><p class="muted">${esc(u.email)}</p>${u.admin?'<p class="mt"><span class="chip">ADMIN</span></p>':`<p class="mt"><span class="chip">${esc((YL[u.year]||"").toUpperCase())}</span> <span class="chip">${esc(u.branch.toUpperCase())}</span></p>`}</div>
+    <h2>${esc(u.name)}</h2><p class="muted">${esc(u.email)}</p><p class="muted">${u.admin?"":u.sub?"⭐ Premium till "+esc(new Date(u.sub).toLocaleDateString("en-IN")):"Free plan"}</p>${u.admin?'<p class="mt"><span class="chip">ADMIN</span></p>':`<p class="mt"><span class="chip">${esc((YL[u.year]||"").toUpperCase())}</span> <span class="chip">${esc(u.branch.toUpperCase())}</span></p>`}</div>
     <div class="pg"><div><small>Public S ID</small><b>${esc(sid(u))}</b></div><div><small>PRN</small><b>${esc(u.prn)}</b></div><div><small>Year</small><b>${esc(YL[u.year])}</b></div><div><small>Branch</small><b>${esc(u.branch)}</b></div><div><small>University</small><b>${esc(u.uni)}</b></div><div><small>Academic Year</small><b>2025–26</b></div></div>
-    <button class="primary-btn wide" id="pEdit">✎ Edit Profile</button><button class="primary-btn wide" id="pBr">⇄ Change Branch</button><button class="primary-btn wide ghost" id="pClose">Close</button>`;
-    $("pEdit").onclick=()=>profile("edit");$("pBr").onclick=()=>profile("branch");$("pClose").onclick=()=>s.close();
+    ${u.admin?"":`<button class="primary-btn wide" id="pSub">⭐ ${u.sub?"Extend":"Get"} Premium</button>`}<button class="primary-btn wide" id="pEdit">✎ Edit Profile</button><button class="primary-btn wide" id="pBr">⇄ Change Branch</button><button class="primary-btn wide ghost" id="pClose">Close</button>`;
+    $("pEdit").onclick=()=>profile("edit");if($("pSub"))$("pSub").onclick=()=>{$("sheet").close();paywall()};$("pBr").onclick=()=>profile("branch");$("pClose").onclick=()=>s.close();
     $("pPhoto").onchange=e=>{const f=e.target.files[0];if(!f)return;const img=new Image();img.onload=async()=>{const c=document.createElement("canvas");c.width=c.height=160;const m=Math.min(img.width,img.height);c.getContext("2d").drawImage(img,(img.width-m)/2,(img.height-m)/2,m,m,0,0,160,160);if(await saveProf({photo:c.toDataURL("image/jpeg",.8)}))profile()};img.src=URL.createObjectURL(f)}}
   if(!s.open)s.showModal()}
 $("profBtn").onclick=()=>profile();$("sheet").addEventListener("click",e=>{if(e.target.id==="sheet")e.target.close()});
@@ -148,19 +150,56 @@ fill("uUni",C.unis);fill("uBranch",C.branches);fill("uYear",C.years,YL);fill("uT
 async function list(){const l=$("upList");l.replaceChildren(mk("li","Loading…","none"));
   const{data,error}=await supabase.from("resources").select("*").order("created_at",{ascending:false});l.replaceChildren();
   if(error)return l.append(mk("li",error.message,"none"));if(!data.length)return l.append(mk("li","No files uploaded yet.","none"));
-  data.forEach(x=>{const li=document.createElement("li"),a=mk("a",x.title);a.href=x.file_url;a.target="_blank";a.rel="noopener";const b=mk("button","Delete","danger-btn");
+  data.forEach(x=>{const li=document.createElement("li"),a=mk("a",x.title);a.href="#";a.onclick=e=>{e.preventDefault();openFile(x)};const b=mk("button","Delete","danger-btn");
     b.onclick=async()=>{if(!confirm(`Delete "${x.title}"?`))return;b.disabled=true;const{error:e1}=await supabase.storage.from(BUCKET).remove([x.file_path]);if(e1){b.disabled=false;return toast("File delete failed: "+e1.message)}
       const{error:e2}=await supabase.from("resources").delete().eq("id",x.id);if(e2){b.disabled=false;return toast(e2.message)}toast("Deleted ✓");list()};
-    li.append(a,mk("span",`${x.university} · ${x.branch} · ${x.year} · ${x.type}`),b);l.append(li)})}
+    li.append(a,mk("span",`${x.university} · ${x.branch} · ${x.year} · ${x.type}${x.is_free?" · FREE":""}`),b);l.append(li)})}
 $("upForm").onsubmit=async e=>{e.preventDefault();if(!S.admin)return toast("Admins only");const f=$("uFile").files[0];if(!f)return;if(f.size>20*1024*1024)return toast("File is larger than 20 MB");
   const btn=e.target.querySelector("button");btn.disabled=true;btn.textContent="Uploading…";
   const path=`${crypto.randomUUID()}-${f.name.replace(/[^a-zA-Z0-9._-]/g,"_")}`;
   const{error:ue}=await supabase.storage.from(BUCKET).upload(path,f,{contentType:f.type||"application/octet-stream"});
   if(ue){btn.disabled=false;btn.textContent="Upload";return toast("Upload failed: "+ue.message)}
   const{data:pub}=supabase.storage.from(BUCKET).getPublicUrl(path);
-  const{error}=await supabase.from("resources").insert({university:$("uUni").value,branch:$("uBranch").value,year:$("uYear").value,type:$("uType").value,title:$("uTitle").value.trim(),file_path:path,file_url:pub.publicUrl});
+  const{error}=await supabase.from("resources").insert({university:$("uUni").value,branch:$("uBranch").value,year:$("uYear").value,type:$("uType").value,title:$("uTitle").value.trim(),file_path:path,file_url:pub.publicUrl,is_free:$("uFree")?$("uFree").checked:false});
   if(error){await supabase.storage.from(BUCKET).remove([path]);toast(error.message)}else{toast("File uploaded ✓");e.target.reset();list()}
   btn.disabled=false;btn.textContent="Upload"};
 
-supabase.auth.onAuthStateChange(ev=>{if(ev==="SIGNED_OUT"||ev==="PASSWORD_RECOVERY")setTimeout(async()=>{await load();route()},0)});
-load().then(route);
+// ---- premium / subscription ----
+async function openFile(x){const w=open("about:blank","_blank");if(w)w.opener=null;
+  const{data,error}=await supabase.storage.from(BUCKET).createSignedUrl(x.file_path,300);
+  if(error||!data){if(w)w.close();return toast("Cannot open file: "+(error?error.message:"locked"))}
+  w?w.location.replace(data.signedUrl):(location.href=data.signedUrl)}
+async function paywall(){if(!S.user){toast("Please login first");location.hash="login";return}
+  if($("modal").open)$("modal").close();
+  const s=$("sheet"),b=$("sheetBody");b.innerHTML='<h3>⭐ CampusBase Premium</h3><p class="muted">Loading plans…</p>';if(!s.open)s.showModal();
+  const{data,error}=await supabase.from("plans").select("*").eq("active",true).order("price_paise");
+  if(error||!data||!data.length){b.innerHTML='<h3>⭐ CampusBase Premium</h3><p class="muted">Plans are not available right now.</p><button class="primary-btn wide ghost" id="plX">Close</button>';$("plX").onclick=()=>s.close();return}
+  b.innerHTML=`<h3>⭐ CampusBase Premium</h3><p class="muted">Unlock all notes, question banks, papers &amp; books.${S.sub?" Active till "+esc(new Date(S.sub).toLocaleDateString("en-IN"))+" — buying again extends it.":""}</p>`;
+  const ph=document.createElement("label");ph.innerHTML='Mobile number (needed for payment)<input id="cfPhone" type="tel" inputmode="numeric" maxlength="10" class="search" placeholder="10-digit mobile">';b.append(ph);
+  data.forEach(p=>{const bt=mk("button","₹"+(p.price_paise/100)+" — "+p.name,"primary-btn wide");bt.onclick=()=>buy(p);b.append(bt)});
+  const c=mk("button","Close","primary-btn wide ghost");c.onclick=()=>s.close();b.append(c)}
+const loadCf=()=>window.Cashfree?Promise.resolve():new Promise((ok,no)=>{const s=document.createElement("script");s.src="https://sdk.cashfree.com/js/v3/cashfree.js";s.onload=ok;s.onerror=()=>no(new Error("Payment script blocked"));document.head.append(s)});
+async function settleOrder(id){const{data:v,error:e}=await supabase.functions.invoke("verify-payment",{body:{order_id:id}});
+  if(!e&&v&&v.ok){await load();home();toast("Premium activated ✓");return true}
+  toast(v&&v.status==="ACTIVE"?"Payment not completed.":"Payment not confirmed yet. If money was deducted, Premium activates automatically in a few minutes.");return false}
+async function buy(p){const ph=($("cfPhone")?$("cfPhone").value:"").trim();
+  if(!/^[6-9]\d{9}$/.test(ph))return toast("Enter a valid 10-digit mobile number");
+  try{const{data,error}=await supabase.functions.invoke("create-order",{body:{plan_id:p.id,phone:ph}});
+    if(error||!data||!data.payment_session_id)return toast("Could not start payment. Try again.");
+    await loadCf();$("sheet").close();
+    const cf=Cashfree({mode:data.mode});
+    await cf.checkout({paymentSessionId:data.payment_session_id,redirectTarget:"_modal"});
+    await settleOrder(data.order_id)}catch(x){toast(x.message)}}
+if($("gForm"))$("gForm").onsubmit=async e=>{e.preventDefault();if(!S.admin)return toast("Admins only");
+  const{data,error}=await supabase.rpc("admin_grant_sub",{p_email:$("gEmail").value.trim(),p_days:+$("gDays").value});
+  toast(error?error.message:"Premium active till "+new Date(data).toLocaleDateString("en-IN"));if(!error)e.target.reset()};
+
+// ---- forgot password: set the new password after the reset link ----
+function recover(){const b=$("sheetBody");b.innerHTML='<form id="rf" class="f"><h3>Set new password</h3><label>New password<input id="rPw" type="password" class="search" autocomplete="new-password" placeholder="Min 6 characters"></label><button class="primary-btn wide">Update password</button></form>';
+  if(!$("sheet").open)$("sheet").showModal();
+  $("rf").onsubmit=async e=>{e.preventDefault();const pw=$("rPw").value;if(pw.length<6)return toast("Min 6 characters");
+    const{error}=await supabase.auth.updateUser({password:pw});if(error)return toast(error.message);$("sheet").close();toast("Password updated ✓")}}
+
+supabase.auth.onAuthStateChange(ev=>{if(ev==="SIGNED_OUT")setTimeout(async()=>{await load();route()},0);if(ev==="PASSWORD_RECOVERY")setTimeout(async()=>{await load();route();recover()},0)});
+load().then(()=>{route();const oid=new URLSearchParams(location.search).get("order_id");
+  if(oid){history.replaceState(null,"",location.pathname+location.hash);if(S.user)settleOrder(oid)}});
