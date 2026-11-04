@@ -128,3 +128,11 @@ body{background:linear-gradient(rgba(2,8,22,.18),rgba(2,8,22,.18)),url("bg.jpg")
 :root[data-theme=light] body{background:radial-gradient(circle at 50% 0,#dbe8ff 0,#eef4ff 60%)}
 .comm{background:linear-gradient(135deg,#1d4ed8,#0ea5e9)}
 .logo-icon{background:linear-gradient(135deg,#4f8cff,#1d4ed8)!important;color:#fff}
+/* ---- Extra smooth feel for Login <-> Sign Up ---- */
+.n-form{transition:opacity .3s ease,transform .35s ease}.n-panel h2{transition:opacity .3s ease,transform .35s ease}
+.neon.busy .n-form{transform:translateY(14px)}.neon.busy .n-panel h2{transform:scale(.92)}
+.neon-glow{transition:transform .8s ease}
+.neon-glow:has(.neon.to-reg),.neon-glow:has(.neon.to-login){animation:cardPop .8s ease}
+@keyframes cardPop{0%{transform:scale(1)}40%{transform:scale(.985)}100%{transform:scale(1)}}
+.nf-in input,.nf-in select{transition:border-color .25s ease}
+

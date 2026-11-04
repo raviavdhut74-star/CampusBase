@@ -111,7 +111,7 @@ function setMode(m){mode=m;const d=MODES[m],adm=m==="master";
   $("regRows").hidden=m!=="register";$("toReg").textContent=m==="register"?"Login":"Sign Up";$("toReg").hidden=adm;$("neon").classList.toggle("reg",m==="register");$("nWelcome").innerHTML=m==="register"?"WELCOME!":m==="master"?"ADMIN<br>ACCESS":"WELCOME<br>BACK!";
   $("mLbl").textContent=adm?"Student Login":"Admin Login";$("forgot").hidden=false;$("aId").type=adm?"email":"text";$("aMsg").textContent="";$("aMsg").style.color="";
   $("aPass").autocomplete=m==="register"?"new-password":"current-password"}
-$("toReg").onclick=()=>setMode(mode==="register"?"login":"register");
+$("toReg").onclick=()=>goMode(mode==="register"?"login":"register");
 function flip(act){const n=$("neon");if(n.classList.contains("busy"))return;n.classList.add("busy");
   setTimeout(()=>{const was=n.classList.contains("reg");act();const is=n.classList.contains("reg"),ch=is!==was;
     n.classList.remove("to-reg","to-login");void n.offsetWidth;if(ch)n.classList.add(is?"to-reg":"to-login");
