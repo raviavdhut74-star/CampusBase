@@ -170,7 +170,7 @@ declare
   a1_email text := 'raviavdhut74@gmail.com';   -- <== EDIT  Admin 1 email
   a1_pass  text := 'Ravi@0441';         -- <== EDIT  Admin 1 password (min 8 chars)
   a1_name  text := 'Ravi Avdhut';             -- <== EDIT  Admin 1 name
-  a2_email text := 'shubhamkanhekar@gmail.com';   -- <== EDIT  Admin 2 email
+  a2_email text := 'shubhamkanhekar193@gmail.com';   -- <== EDIT  Admin 2 email
   a2_pass  text := 'Shubham@123';         -- <== EDIT  Admin 2 password (min 8 chars)
   a2_name  text := 'Shubham Kanhekar';                  -- <== EDIT  Admin 2 name
 begin
