@@ -29,9 +29,11 @@ async function loadList() {
   }
 }
 
-async function subjHints() {
-  const { data } = await supabase.from("resources").select("subject").eq("university", $("uni").value).eq("branch", $("branch").value).eq("year", $("year").value).not("subject", "is", null);
-  $("subjList").replaceChildren(...[...new Set((data || []).map((r) => r.subject).filter(Boolean))].sort().map((v) => new Option(v, v)));
+async function loadSubjects() {
+  const { data, error } = await supabase.from("subjects").select("name").eq("university", $("uni").value).eq("branch", $("branch").value).eq("year", $("year").value).order("name");
+  if (error) toast("Subjects: " + error.message + " (run subject_setup.sql)");
+  const names = (data || []).map((r) => r.name);
+  $("subject").replaceChildren(...(names.length ? names : ["— no subjects yet (add from index.html admin) —"]).map((v) => new Option(v, names.length ? v : "")));
 }
 
 async function removeItem(r, btn) {
@@ -69,7 +71,7 @@ $("form").addEventListener("submit", async (e) => {
   } else {
     toast("Upload ho gaya ✓");
     $("form").reset();
-    loadList(); subjHints();
+    loadList();
   }
   btn.disabled = false; btn.textContent = "Upload";
 });
@@ -84,6 +86,6 @@ $("logout").onclick = async () => { await supabase.auth.signOut(); location.repl
   fill("uni", CATALOG.universities); fill("branch", CATALOG.branches);
   fill("year", CATALOG.years); fill("type", CATALOG.types);
   $("msg").hidden = true; $("panel").hidden = false;
-  ["uni", "branch", "year"].forEach((i) => $(i).addEventListener("change", subjHints));
-  loadList(); subjHints();
+  ["uni", "branch", "year"].forEach((i) => $(i).addEventListener("change", loadSubjects));
+  loadList(); loadSubjects();
 })();

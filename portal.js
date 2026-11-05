@@ -46,7 +46,7 @@ function route(){const h=location.hash.slice(1)||"home",u=me();let v="home";
   if(h==="login"||h==="master"){if(u){location.hash=u.admin?"admin":"home";return}v="auth";setMode(h==="master"?"master":(mode==="register"?"register":"login"))}
   else if(h==="admin"){if(u&&u.admin)v="admin";else{location.hash="master";return}}
   document.querySelectorAll(".view").forEach(s=>s.hidden=s.id!=="v-"+v);$("backBtn").hidden=v==="home";
-  if(v==="home")home();if(v==="admin"){$("who").textContent="Signed in as admin: "+u.email;list();subjHints()}
+  if(v==="home")home();if(v==="admin"){$("who").textContent="Signed in as admin: "+u.email;list();loadSubj()}
   document.querySelectorAll(".bnav button").forEach(b=>b.classList.toggle("on",b.dataset.n==="home"&&v==="home"))}
 $("backBtn").onclick=()=>history.length>1?history.back():(location.hash="home");
 addEventListener("hashchange",()=>{route();scrollTo(0,0)});
@@ -153,28 +153,72 @@ async function doAuth(id,pw,m,form){const em=id.toLowerCase();
 }
 $("adOut").onclick=logout;
 
-// admin: upload (any file) / delete
-// Subject box suggests subjects already uploaded for the chosen university/branch/year (admin can still type a new one)
-async function subjHints(){const{data}=await supabase.from("resources").select("subject").eq("university",$("uUni").value).eq("branch",$("uBranch").value).eq("year",$("uYear").value).not("subject","is",null);
-  $("subjList").replaceChildren(...[...new Set((data||[]).map(r=>r.subject).filter(Boolean))].sort().map(v=>new Option(v,v)))}
-["uUni","uBranch","uYear"].forEach(i=>$(i).addEventListener("change",subjHints));
+// admin: upload (any file, many at once) / delete
 fill("uUni",C.unis);fill("uBranch",C.branches);fill("uYear",C.years,YL);fill("uType",C.types);
-async function list(){const l=$("upList");l.replaceChildren(mk("li","Loading…","none"));
-  const{data,error}=await supabase.from("resources").select("*").order("created_at",{ascending:false});l.replaceChildren();
-  if(error)return l.append(mk("li",error.message,"none"));if(!data.length)return l.append(mk("li","No files uploaded yet.","none"));
-  data.forEach(x=>{const li=document.createElement("li"),a=mk("a",x.title);a.href="#";a.onclick=e=>{e.preventDefault();openFile(x)};const b=mk("button","Delete","danger-btn");
+const MAXB=20*1024*1024;
+// Subject = dropdown of subjects saved for the chosen university/branch/year. "＋ New" adds one to the list.
+async function loadSubj(keep){const{data,error}=await supabase.from("subjects").select("name").eq("university",$("uUni").value).eq("branch",$("uBranch").value).eq("year",$("uYear").value).order("name");
+  if(error)toast("Subjects: "+error.message+" (run subject_setup.sql)");
+  const names=(data||[]).map(r=>r.name);
+  $("uSubject").innerHTML=names.length?'<option value="">Select subject…</option>'+opts(names):'<option value="">No subjects yet — tap ＋ New</option>';
+  const m=keep&&names.find(n=>n.toLowerCase()===keep.toLowerCase());if(m)$("uSubject").value=m}
+["uUni","uBranch","uYear"].forEach(i=>$(i).addEventListener("change",()=>loadSubj()));
+$("addSubj").onclick=()=>{const r=$("newSubRow");r.hidden=!r.hidden;if(!r.hidden)$("newSub").focus()};
+$("newSub").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();$("saveSub").click()}};
+$("saveSub").onclick=async()=>{if(!S.admin)return toast("Admins only");const n=$("newSub").value.trim().replace(/\s+/g," ");if(!n)return toast("Enter a subject name");
+  const{error}=await supabase.from("subjects").insert({university:$("uUni").value,branch:$("uBranch").value,year:$("uYear").value,name:n});
+  if(error&&!/duplicate|unique/i.test(error.message))return toast(error.message);
+  $("newSub").value="";$("newSubRow").hidden=true;await loadSubj(n);toast(error?"Subject already exists — selected":"Subject added ✓")};
+
+// file queue: drag & drop / browse, editable title per file
+let Q=[];
+const fmt=b=>b<1048576?Math.max(1,Math.round(b/1024))+" KB":(b/1048576).toFixed(1)+" MB";
+const baseName=n=>n.replace(/\.[^.]+$/,"").replace(/[_-]+/g," ").trim();
+const fIcon=f=>/pdf/i.test(f.type)||/\.pdf$/i.test(f.name)?"📕":/^image\//.test(f.type)?"🖼️":/\.(docx?|rtf)$/i.test(f.name)?"📘":/\.(pptx?)$/i.test(f.name)?"📙":/\.(xlsx?|csv)$/i.test(f.name)?"📗":"📄";
+function addFiles(fl){[...fl].forEach(f=>{if(f.size>MAXB)return toast(f.name+" is larger than 20 MB");if(Q.some(q=>q.file.name===f.name&&q.file.size===f.size))return;Q.push({file:f,title:baseName(f.name).slice(0,120),state:"ready"})});renderQ()}
+function renderQ(){const ul=$("upQ");ul.replaceChildren();
+  Q.forEach((q,i)=>{const li=document.createElement("li");li.className="q-"+q.state;const inp=document.createElement("input");inp.className="search";inp.maxLength=120;inp.value=q.title;inp.disabled=q.state==="up"||q.state==="done";inp.oninput=()=>{q.title=inp.value};
+    const st={ready:"ready",up:"uploading…",done:"uploaded ✓",error:q.err||"failed"}[q.state],meta=mk("small",fmt(q.file.size)+" · "+st,"muted"),mid=mk("div",null,"q-mid");mid.append(inp,meta);
+    const rm=mk("button","✕","icon-btn");rm.type="button";rm.setAttribute("aria-label","Remove");rm.disabled=q.state==="up";rm.onclick=()=>{Q.splice(i,1);renderQ()};li.append(mk("span",fIcon(q.file),"q-ic"),mid,rm);ul.append(li)});
+  $("upSum").textContent=Q.length?Q.length+" file(s) in queue":""}
+const drop=$("drop");drop.onclick=()=>$("uFile").click();drop.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();$("uFile").click()}};
+["dragenter","dragover"].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.add("over")}));
+["dragleave","drop"].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.remove("over")}));
+drop.addEventListener("drop",e=>addFiles(e.dataTransfer.files));$("uFile").onchange=e=>{addFiles(e.target.files);e.target.value=""};
+
+$("upForm").onsubmit=async e=>{e.preventDefault();if(!S.admin)return toast("Admins only");
+  const subject=$("uSubject").value;if(!subject)return toast("Select a subject first");
+  const todo=Q.filter(q=>q.state==="ready"||q.state==="error");if(!todo.length)return toast("Add at least one file");
+  if(todo.some(q=>!q.title.trim()))return toast("Every file needs a title");
+  const btn=$("upGo");btn.disabled=true;let ok=0;
+  const meta={university:$("uUni").value,branch:$("uBranch").value,year:$("uYear").value,type:$("uType").value,subject,is_free:$("uFree").checked};
+  for(let i=0;i<todo.length;i++){const q=todo[i],f=q.file;q.state="up";btn.textContent=`Uploading ${i+1}/${todo.length}…`;renderQ();
+    const path=`${crypto.randomUUID()}-${f.name.replace(/[^a-zA-Z0-9._-]/g,"_")}`;
+    const{error:ue}=await supabase.storage.from(BUCKET).upload(path,f,{contentType:f.type||"application/octet-stream"});
+    if(ue){q.state="error";q.err=ue.message;continue}
+    const{data:pub}=supabase.storage.from(BUCKET).getPublicUrl(path);
+    const{error}=await supabase.from("resources").insert({...meta,title:q.title.trim(),file_path:path,file_url:pub.publicUrl});
+    if(error){await supabase.storage.from(BUCKET).remove([path]);q.state="error";q.err=error.message;continue}
+    q.state="done";ok++}
+  Q=Q.filter(q=>q.state!=="done");renderQ();btn.disabled=false;btn.textContent="Upload";
+  toast(ok?`${ok} file(s) uploaded ✓`+(Q.length?` · ${Q.length} failed`:""):"Upload failed");if(ok){$("uFree").checked=false;list()}};
+
+// uploaded files: search + subject filter + delete
+let UP=[];
+function renderUp(){const l=$("upList"),q=$("upSearch").value.trim().toLowerCase(),sf=$("upFilt").value;l.replaceChildren();
+  const rows=UP.filter(x=>(sf===ALLSUB||(x.subject||"General")===sf)&&(!q||(x.title+" "+(x.subject||"")+" "+x.type+" "+x.branch).toLowerCase().includes(q)));
+  if(!rows.length)return l.append(mk("li",UP.length?"No matches.":"No files uploaded yet.","none"));
+  rows.forEach(x=>{const li=document.createElement("li"),a=mk("a",x.title);a.href="#";a.onclick=e=>{e.preventDefault();openFile(x)};const b=mk("button","Delete","danger-btn");
     b.onclick=async()=>{if(!confirm(`Delete "${x.title}"?`))return;b.disabled=true;const{error:e1}=await supabase.storage.from(BUCKET).remove([x.file_path]);if(e1){b.disabled=false;return toast("File delete failed: "+e1.message)}
       const{error:e2}=await supabase.from("resources").delete().eq("id",x.id);if(e2){b.disabled=false;return toast(e2.message)}toast("Deleted ✓");list()};
     li.append(a,mk("span",`${x.university} · ${x.branch} · ${x.year} · ${x.type}${x.subject?" · "+x.subject:""}${x.is_free?" · FREE":""}`),b);l.append(li)})}
-$("upForm").onsubmit=async e=>{e.preventDefault();if(!S.admin)return toast("Admins only");const f=$("uFile").files[0];if(!f)return;const subject=$("uSubject").value.trim();if(!subject)return toast("Subject required");if(f.size>20*1024*1024)return toast("File is larger than 20 MB");
-  const btn=e.target.querySelector("button");btn.disabled=true;btn.textContent="Uploading…";
-  const path=`${crypto.randomUUID()}-${f.name.replace(/[^a-zA-Z0-9._-]/g,"_")}`;
-  const{error:ue}=await supabase.storage.from(BUCKET).upload(path,f,{contentType:f.type||"application/octet-stream"});
-  if(ue){btn.disabled=false;btn.textContent="Upload";return toast("Upload failed: "+ue.message)}
-  const{data:pub}=supabase.storage.from(BUCKET).getPublicUrl(path);
-  const{error}=await supabase.from("resources").insert({university:$("uUni").value,branch:$("uBranch").value,year:$("uYear").value,type:$("uType").value,subject,title:$("uTitle").value.trim(),file_path:path,file_url:pub.publicUrl,is_free:$("uFree")?$("uFree").checked:false});
-  if(error){await supabase.storage.from(BUCKET).remove([path]);toast(error.message)}else{toast("File uploaded ✓");e.target.reset();list();subjHints()}
-  btn.disabled=false;btn.textContent="Upload"};
+async function list(){const l=$("upList");l.replaceChildren(mk("li","Loading…","none"));
+  const{data,error}=await supabase.from("resources").select("*").order("created_at",{ascending:false});
+  if(error)return l.replaceChildren(mk("li",error.message,"none"));
+  UP=data;const keep=$("upFilt").value,subs=[...new Set(UP.map(x=>x.subject||"General"))].sort((a,b)=>a.localeCompare(b));
+  $("upFilt").innerHTML=`<option value="${ALLSUB}">All subjects (${UP.length})</option>`+opts(subs,subs.includes(keep)?keep:null);renderUp()}
+$("upSearch").oninput=renderUp;$("upFilt").onchange=renderUp;
+
 
 
 // ---- info pages: every menu item / card / bottom-nav tab opens a real screen ----

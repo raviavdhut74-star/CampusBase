@@ -55,12 +55,20 @@
 
 <section class="view wrap" id="v-admin" hidden>
   <div class="row"><span class="hint" id="who"></span><button class="uni-btn sp" id="adOut">Logout</button></div>
-  <form id="upForm" class="f card mt"><h2>📤 Upload Files (admin only)</h2>
-    <label>University<select id="uUni"></select></label><label>Branch<select id="uBranch"></select></label><label>Year<select id="uYear"></select></label><label>Type<select id="uType"></select></label>
-    <label>Subject<input id="uSubject" class="search" list="subjList" required maxlength="80" placeholder="e.g. Data Structures" autocomplete="off"></label><datalist id="subjList"></datalist>
-    <label>Title<input id="uTitle" class="search" required maxlength="120"></label><label>File — PDF, image, Word, PPT, Excel… (max 20 MB)<input id="uFile" type="file" required></label>
-    <button class="primary-btn" type="submit">Upload</button></form>
-  <h3 class="sec">Uploaded files — delete anytime</h3><ul class="saved-list" id="upList"></ul>
+  <form id="upForm" class="f card mt up2"><h2>📤 Upload Files <small class="muted">(admin only)</small></h2>
+    <div class="up-step"><b>1 · Where should it appear?</b>
+      <div class="up-grid"><label>University<select id="uUni"></select></label><label>Branch<select id="uBranch"></select></label><label>Year<select id="uYear"></select></label><label>Type<select id="uType"></select></label></div>
+      <label>Subject<div class="up-subj"><select id="uSubject"></select><button type="button" class="uni-btn" id="addSubj">＋ New</button></div></label>
+      <div class="up-subj" id="newSubRow" hidden><input id="newSub" class="search" maxlength="80" placeholder="New subject name, e.g. Data Structures"><button type="button" class="uni-btn" id="saveSub">Add</button></div>
+    </div>
+    <div class="up-step"><b>2 · Add files</b>
+      <div class="drop" id="drop" tabindex="0" role="button" aria-label="Choose files"><span>📁</span><b>Drag &amp; drop files here</b><small>or tap to browse · PDF, image, Word, PPT, Excel… · max 20 MB each · multiple allowed</small><input id="uFile" type="file" multiple hidden></div>
+      <ul class="up-files" id="upQ"></ul>
+    </div>
+    <label class="chk"><input id="uFree" type="checkbox"> Free for everyone (no subscription needed)</label>
+    <button class="primary-btn" id="upGo" type="submit">Upload</button><div class="muted" id="upSum"></div></form>
+  <h3 class="sec">Uploaded files — delete anytime</h3>
+  <div class="up-tools"><input id="upSearch" class="search" placeholder="🔍 Search uploaded files…"><select id="upFilt"><option value="__all__">All subjects</option></select></div><ul class="saved-list" id="upList"></ul>
 </section>
 </main>
 
