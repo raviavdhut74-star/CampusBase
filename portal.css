@@ -165,3 +165,9 @@ body{background:linear-gradient(rgba(2,8,22,.18),rgba(2,8,22,.18)),url("bg.jpg")
 .subj-bar .sj[aria-pressed="true"]{background:var(--accent2);border-color:var(--accent2);color:#fff}
 .subj-bar .sj.sj0{opacity:.55}
 .res-list li.grp{border:0;background:none;padding:10px 4px 0;font-weight:700;font-size:.85rem;color:var(--muted);justify-content:flex-start}
+
+/* ---- branch page ---- */
+.br-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.br-card{display:grid;gap:8px;align-content:start;justify-items:start}
+.br-card .muted{font-size:.75rem;line-height:1.4}.br-card .uni-btn{margin-top:4px}
+@media(max-width:380px){.br-grid{grid-template-columns:1fr}}

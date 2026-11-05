@@ -30,7 +30,7 @@ const th=(()=>{try{return localStorage.getItem("cb2_theme")}catch{return null}})
 
 // drawer
 const T=t=>"type:"+t;
-const MENU=[["⭐","Premium","premium"],["👥","Social Mode","pg:social"],["🏠","Home","home"],["📗","Notes",T("Notes")],["✍️","Handwritten Notes",T("Handwritten Notes")],["🗄️","Question Bank",T("Question Bank")],["⭐","Answer Bank",T("Answer Bank")],["☑️","MCQ",T("MCQ")],["🏆","Leaderboard","pg:leader"],["💬","Doubt Solving","pg:doubt"],["√x","Formula Notes",T("Formula Notes")],["📄","Previous Year Papers",T("Previous Year Papers")],["📕","Books",T("Books")],["⬇️","Downloads","pg:dl"],["🎖️","Certificates","pg:cert"],["📝","Revaluation Score","pg:reval"],["🎁","Refer & Earn","pg:refer"],["📱","Download App","pg:apk"],["🧾","Payment Receipt","pg:receipt"],["ℹ️","About Us","foot"],["📸","Follow on Instagram","s:instagram"],["💚","Join WhatsApp Group","s:whatsapp"],["✈️","Join Telegram","s:telegram"],["✉️","Contact Us","foot"],["⚙️","Settings","pg:settings"]];
+const MENU=[["⭐","Premium","premium"],["👥","Social Mode","pg:social"],["🏠","Home","home"],["🎓","My Branch","branch"],["📗","Notes",T("Notes")],["✍️","Handwritten Notes",T("Handwritten Notes")],["🗄️","Question Bank",T("Question Bank")],["⭐","Answer Bank",T("Answer Bank")],["☑️","MCQ",T("MCQ")],["🏆","Leaderboard","pg:leader"],["💬","Doubt Solving","pg:doubt"],["√x","Formula Notes",T("Formula Notes")],["📄","Previous Year Papers",T("Previous Year Papers")],["📕","Books",T("Books")],["⬇️","Downloads","pg:dl"],["🎖️","Certificates","pg:cert"],["📝","Revaluation Score","pg:reval"],["🎁","Refer & Earn","pg:refer"],["📱","Download App","pg:apk"],["🧾","Payment Receipt","pg:receipt"],["ℹ️","About Us","foot"],["📸","Follow on Instagram","s:instagram"],["💚","Join WhatsApp Group","s:whatsapp"],["✈️","Join Telegram","s:telegram"],["✉️","Contact Us","foot"],["⚙️","Settings","pg:settings"]];
 function drawer(){const u=me();
   $("dUser").innerHTML=avatar(u)+`<div><b>${esc(u?u.name:"Guest")}</b><div class="muted">${esc(u?u.branch:"Please login")}</div></div>`;
   const l=$("dList");l.innerHTML="";
@@ -38,15 +38,16 @@ function drawer(){const u=me();
   const li=document.createElement("li"),b=mk("button",u?"⎋  Logout":"⎋  Login / Register","lo");b.onclick=()=>{setDrawer(false);u?logout():(location.hash="login")};li.append(b);l.append(li)}
 const setDrawer=o=>{$("drawer").classList.toggle("on",o);$("scrim").classList.toggle("on",o)};
 $("burger").onclick=()=>{drawer();setDrawer(true)};$("scrim").onclick=()=>setDrawer(false);
-function go(a){if(a==="soon")return soon();if(a.startsWith("pg:"))return PAGES[a.slice(3)]();if(a==="premium")return paywall();if(a==="home"){location.hash="home";scrollTo(0,0)}else if(a==="admin")location.hash="admin";else if(a==="foot")$("foot").scrollIntoView({behavior:"smooth"});
+function go(a){if(a==="soon")return soon();if(a.startsWith("pg:"))return PAGES[a.slice(3)]();if(a==="premium")return paywall();if(a==="home"){location.hash="home";scrollTo(0,0)}else if(a==="branch")goBranch();else if(a==="admin")location.hash="admin";else if(a==="foot")$("foot").scrollIntoView({behavior:"smooth"});
   else if(a.startsWith("s:"))social(a.slice(2));else if(a.startsWith("type:"))browse(a.slice(5))}
 
 // routing
 function route(){const h=location.hash.slice(1)||"home",u=me();let v="home";
   if(h==="login"||h==="master"){if(u){location.hash=u.admin?"admin":"home";return}v="auth";setMode(h==="master"?"master":(mode==="register"?"register":"login"))}
   else if(h==="admin"){if(u&&u.admin)v="admin";else{location.hash="master";return}}
+  else if(h==="branch"){if(!u){location.hash="login";return}v="branch"}
   document.querySelectorAll(".view").forEach(s=>s.hidden=s.id!=="v-"+v);$("backBtn").hidden=v==="home";
-  if(v==="home")home();if(v==="admin"){$("who").textContent="Signed in as admin: "+u.email;list();loadSubj()}
+  if(v==="home")home();if(v==="branch")branchPage();if(v==="admin"){$("who").textContent="Signed in as admin: "+u.email;list();loadSubj()}
   document.querySelectorAll(".bnav button").forEach(b=>b.classList.toggle("on",b.dataset.n==="home"&&v==="home"))}
 $("backBtn").onclick=()=>history.length>1?history.back():(location.hash="home");
 addEventListener("hashchange",()=>{route();scrollTo(0,0)});
@@ -60,6 +61,7 @@ function home(){const u=me();
   $("greet").innerHTML=u?`${avatar(u)}<div><b>Hello, ${esc(u.name)}! 👋</b><div class="muted">Keep learning, keep growing.</div>${u.admin?'<span class="chip">Admin</span>':`<span class="chip">${esc(YL[u.year]||"")} Student</span>`}</div><div class="sp muted" style="text-align:right">Your Progress<br>Coming soon</div>`
     :`<span class="av">👋</span><div><b>Hello, Student!</b><div class="muted">Login with your PRN to personalise.</div></div><a class="uni-btn sp" href="#login">Login</a>`;
   $("branchCard").innerHTML=u&&!u.admin?`<span class="av" style="border-radius:12px">🤖</span><div><b>${esc(u.branch)}</b><div class="muted">${esc(u.uni)} · ${esc(YL[u.year])}</div></div><span class="chip sp">Open</span>`:`<div class="muted">${u?"Admin account":"Login to see your branch."}</div>`;
+  $("branchCard").style.cursor=u&&!u.admin?"pointer":"";$("branchCard").onclick=u&&!u.admin?goBranch:null;
   $("soc").innerHTML="";[["ig","📸 Instagram","instagram"],["wa","💬 WhatsApp","whatsapp"],["tg","✈️ Telegram","telegram"]].forEach(([c,t,k])=>{const b=mk("button",t,c+(SOCIAL[k].on?"":" off"));b.onclick=()=>social(k);$("soc").append(b)});
   $("dash").replaceChildren(...(u&&u.admin?[["📤","Upload Files","Add or delete material","@admin","Open"]]:[]).concat(CARDS).map(card));$("more").replaceChildren(...MORE.map(card));
   const cb=$("commBtn");cb.className=SOCIAL.whatsapp.on?"":"off";cb.onclick=()=>social("whatsapp");$("apkBtn").onclick=()=>PAGES.apk()}
@@ -70,9 +72,9 @@ document.querySelectorAll(".bnav button").forEach(b=>b.onclick=()=>{const n=b.da
 
 // browse files
 let tab=C.types[0];fill("fUni",C.unis);fill("fBranch",C.branches);fill("fYear",C.years,YL);
-function browse(t){const u=me();tab=t;subSel=ALLSUB;if(u&&!u.admin){$("fUni").value=u.uni;$("fBranch").value=u.branch;$("fYear").value=u.year}if(!$("modal").open)$("modal").showModal();show()}
+function browse(t,sem){const u=me();tab=t;SEM=sem||null;subSel=ALLSUB;if(u&&(!u.admin||sem)){$("fUni").value=u.uni;$("fBranch").value=u.branch;$("fYear").value=u.year}if(!$("modal").open)$("modal").showModal();show()}
 const ALLSUB="__all__";
-let subjCache=[],subjNames=[],subSel=ALLSUB;
+let subjCache=[],subjNames=[],subSel=ALLSUB,SEM=null;
 const subOf=x=>(x.subject||"").trim()||"General";
 // subject chips: every subject saved for this university/branch/year (even with 0 files) + subjects found on files
 function renderSubj(){const bar=$("subjBar");bar.replaceChildren();
@@ -96,8 +98,10 @@ async function show(){const t=$("tabs");t.replaceChildren();C.types.forEach(x=>{
   const[r,s]=await Promise.all([supabase.from("resources").select("*").eq("university",U).eq("branch",B).eq("year",Y).eq("type",tab).order("created_at",{ascending:false}),
     supabase.from("subjects").select("name").eq("university",U).eq("branch",B).eq("year",Y)]);
   if(r.error){l.replaceChildren(mk("li",r.error.message,"none"));return}
-  subjCache=r.data;subjNames=(s.data||[]).map(x=>x.name);renderSubj();renderRes()}
-["fUni","fBranch","fYear"].forEach(i=>$(i).onchange=()=>{subSel=ALLSUB;show()});$("mClose").onclick=()=>$("modal").close();
+  subjCache=r.data;subjNames=(s.data||[]).map(x=>x.name);
+  if(SEM){const set=new Set(SEM);subjCache=subjCache.filter(x=>set.has(subOf(x)));subjNames=SEM}
+  renderSubj();renderRes()}
+["fUni","fBranch","fYear"].forEach(i=>$(i).onchange=()=>{SEM=null;subSel=ALLSUB;show()});$("mClose").onclick=()=>$("modal").close();
 
 // profile sheet
 async function saveProf(patch){const{error}=await supabase.from("profiles").update(patch).eq("id",S.user.id);if(error)return toast(error.message),false;await load();home();return true}
@@ -109,7 +113,7 @@ function profile(mode){const u=me();if(!u){toast("Please login first");location.
       `<button class="primary-btn wide">Save</button><button type="button" class="primary-btn wide ghost" id="pBack">Cancel</button></form>`;
     $("pBack").onclick=()=>profile();
     $("pf").onsubmit=async e=>{e.preventDefault();let p;if(br)p={branch:$("pBranch").value};else{const n=$("pName").value.trim();if(!n)return toast("Name required");p={name:n,university:$("pUni").value,year:$("pYear").value}}
-      if(await saveProf(p)){toast("Saved ✓");profile()}}}
+      if(await saveProf(p)){toast("Saved ✓");if(br){$("sheet").close();goBranch()}else profile()}}}
   else{b.innerHTML=`<div style="text-align:center"><div class="pav">${avatar(u)}<label title="Change photo">📷<input type="file" id="pPhoto" accept="image/*" hidden></label></div><p class="muted">Tap the camera icon to update your photo.</p>
     <h2>${esc(u.name)}</h2><p class="muted">${esc(u.email)}</p><p class="muted">${u.admin?"":u.sub?"⭐ Premium till "+esc(new Date(u.sub).toLocaleDateString("en-IN")):"Free plan"}</p>${u.admin?'<p class="mt"><span class="chip">ADMIN</span></p>':`<p class="mt"><span class="chip">${esc((YL[u.year]||"").toUpperCase())}</span> <span class="chip">${esc(u.branch.toUpperCase())}</span></p>`}</div>
     <div class="pg"><div><small>Public S ID</small><b>${esc(sid(u))}</b></div><div><small>PRN</small><b>${esc(u.prn)}</b></div><div><small>Year</small><b>${esc(YL[u.year])}</b></div><div><small>Branch</small><b>${esc(u.branch)}</b></div><div><small>University</small><b>${esc(u.uni)}</b></div><div><small>Academic Year</small><b>2025–26</b></div></div>
@@ -170,13 +174,15 @@ const MAXB=20*1024*1024;
 async function loadSubj(keep){const{data,error}=await supabase.from("subjects").select("name").eq("university",$("uUni").value).eq("branch",$("uBranch").value).eq("year",$("uYear").value).order("name");
   if(error)toast("Subjects: "+error.message+" (run subject_setup.sql)");
   const names=(data||[]).map(r=>r.name);
+  const sems=({FE:[1,2],SE:[3,4],TE:[5,6],BE:[7,8]})[$("uYear").value]||[];
+  $("newSem").innerHTML='<option value="">Semester (optional)</option>'+sems.map(n=>`<option value="${n}">Sem ${ROMAN[n]}</option>`).join("");
   $("uSubject").innerHTML=names.length?'<option value="">Select subject…</option>'+opts(names):'<option value="">No subjects yet — tap ＋ New</option>';
   const m=keep&&names.find(n=>n.toLowerCase()===keep.toLowerCase());if(m)$("uSubject").value=m}
 ["uUni","uBranch","uYear"].forEach(i=>$(i).addEventListener("change",()=>loadSubj()));
 $("addSubj").onclick=()=>{const r=$("newSubRow");r.hidden=!r.hidden;if(!r.hidden)$("newSub").focus()};
 $("newSub").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();$("saveSub").click()}};
 $("saveSub").onclick=async()=>{if(!S.admin)return toast("Admins only");const n=$("newSub").value.trim().replace(/\s+/g," ");if(!n)return toast("Enter a subject name");
-  const{error}=await supabase.from("subjects").insert({university:$("uUni").value,branch:$("uBranch").value,year:$("uYear").value,name:n});
+  const{error}=await supabase.from("subjects").insert({university:$("uUni").value,branch:$("uBranch").value,year:$("uYear").value,name:n,semester:+$("newSem").value||null});
   if(error&&!/duplicate|unique/i.test(error.message))return toast(error.message);
   $("newSub").value="";$("newSubRow").hidden=true;await loadSubj(n);toast(error?"Subject already exists — selected":"Subject added ✓")};
 
@@ -230,6 +236,25 @@ async function list(){const l=$("upList");l.replaceChildren(mk("li","Loading…"
 $("upSearch").oninput=renderUp;$("upFilt").onchange=renderUp;
 
 
+
+
+// ---- branch page: shown after the student's branch is known (like: Semester cards + Question Bank + Answer Bank) ----
+const BR_FULL={"AI & ML":"Artificial Intelligence & Machine Learning","AI & DS":"Artificial Intelligence & Data Science",Computer:"Computer Engineering",IT:"Information Technology",Mechanical:"Mechanical Engineering",Civil:"Civil Engineering",Electrical:"Electrical Engineering","E&TC":"Electronics & Telecommunication",Chemical:"Chemical Engineering"};
+const BR_ICON={"AI & ML":"🤖","AI & DS":"📊",Computer:"💻",IT:"🌐",Mechanical:"⚙️",Civil:"🏗️",Electrical:"⚡","E&TC":"📡",Chemical:"🧪"};
+const YS={FE:"FY",SE:"SY",TE:"TY",BE:"Final Year"},ROMAN=["","I","II","III","IV","V","VI","VII","VIII"];
+const goBranch=()=>{if(location.hash==="#branch")route();else location.hash="branch"};
+const brief=a=>a.slice(0,5).join(", ")+(a.length>5?" & more":"");
+async function branchPage(){const u=me();if(!u)return;const full=BR_FULL[u.branch]||u.branch,ys=YS[u.year]||u.year;
+  $("brHead").innerHTML=`<span class="av" style="border-radius:14px">${BR_ICON[u.branch]||"🎓"}</span><div><b>${esc(full)}</b><div class="muted">${esc(u.uni)} | ${esc(YL[u.year]||u.year)} 2025–26</div><span class="chip">${esc(ys.toUpperCase())} ENGINEERING</span></div>`;
+  $("brSub").textContent=`${ys} ${full} — Notes, PYQ, Question Bank & Answer Bank`;
+  const g=$("brGrid");g.replaceChildren(mk("div","Loading…","muted"));
+  const{data}=await supabase.from("subjects").select("name,semester").eq("university",u.uni).eq("branch",u.branch).eq("year",u.year).order("name");
+  const by={};(data||[]).forEach(r=>{const k=r.semester||0;(by[k]=by[k]||[]).push(r.name)});
+  const cards=Object.keys(by).map(Number).sort((a,b)=>a-b).map(k=>({ic:"📚",t:k?"Semester "+ROMAN[k]:"Subject-wise Notes",d:(k?"Semester "+ROMAN[k]+" — ":"")+"subject-wise notes ("+brief(by[k])+")",tag:k?"Sem "+ROMAN[k]:"All subjects",go:()=>browse("Notes",by[k])}));
+  [["🗄️","Question Bank","Exam-focused question bank — subject-wise","Question Bank"],["⭐","Answer Bank","Solved answers — exam-focused answer bank","Answer Bank"],["📄","Previous Year Papers","Previous year question papers — subject-wise","Previous Year Papers"]]
+    .forEach(([ic,t,d,ty])=>cards.push({ic,t,d,tag:t,go:()=>browse(ty)}));
+  g.replaceChildren(...cards.map(c=>{const d=mk("div",null,"card dc br-card");d.innerHTML=`<span class="ic">${c.ic}</span><b>${esc(c.t)}</b><span class="muted">${esc(c.d)}</span>`;
+    const b=mk("button","Open →","uni-btn");b.onclick=c.go;d.append(b,mk("span",c.tag,"chip"));return d}))}
 
 // ---- info pages: every menu item / card / bottom-nav tab opens a real screen ----
 const APK_URL=""; // paste your APK download link here when ready

@@ -30,6 +30,12 @@
   <div class="card mt row"><span class="av" style="border-radius:12px">⬇</span><div><b>Download App</b><div class="muted">Tap to download APK &amp; install manually</div></div><button class="icon-btn sp" id="apkBtn" aria-label="Download app">⬇</button></div>
 </section>
 
+<section class="view wrap" id="v-branch" hidden>
+  <div class="card row mt" id="brHead"></div>
+  <h3 class="sec">Select a Subject or Resource</h3><p class="muted" id="brSub"></p>
+  <div class="br-grid mt" id="brGrid"></div>
+</section>
+
 <section class="view auth-page" id="v-auth" hidden>
  <div class="neon-glow"><div class="neon" id="neon"><div class="neon-in">
   <div class="n-panel"><h2 id="nWelcome">WELCOME<br>BACK!</h2></div>
@@ -61,7 +67,7 @@
     <div class="up-step"><b>1 · Where should it appear?</b>
       <div class="up-grid"><label>University<select id="uUni"></select></label><label>Branch<select id="uBranch"></select></label><label>Year<select id="uYear"></select></label><label>Type<select id="uType"></select></label></div>
       <label>Subject<div class="up-subj"><select id="uSubject"></select><button type="button" class="uni-btn" id="addSubj">＋ New</button></div></label>
-      <div class="up-subj" id="newSubRow" hidden><input id="newSub" class="search" maxlength="80" placeholder="New subject name, e.g. Data Structures"><button type="button" class="uni-btn" id="saveSub">Add</button></div>
+      <div class="up-subj" id="newSubRow" hidden><input id="newSub" class="search" maxlength="80" placeholder="New subject name, e.g. Data Structures"><select id="newSem" aria-label="Semester"></select><button type="button" class="uni-btn" id="saveSub">Add</button></div>
     </div>
     <div class="up-step"><b>2 · Add files</b>
       <div class="drop" id="drop" tabindex="0" role="button" aria-label="Choose files"><span>📁</span><b>Drag &amp; drop files here</b><small>or tap to browse · PDF, image, Word, PPT, Excel… · max 20 MB each · multiple allowed</small><input id="uFile" type="file" multiple hidden></div>
