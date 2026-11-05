@@ -9,8 +9,8 @@ export const BUCKET = "pdfs";
 
 // ⚠️ Ye lists script.js wali lists jaisi hi rakho
 export const CATALOG = {
-  universities: ["SPPU (Pune)", "DBATU", "Mumbai University", "Shivaji University"],
-  branches: ["Computer", "IT", "Mechanical", "Civil", "Electrical", "E&TC", "Chemical", "AI & DS"],
+  universities: ["SPPU", "BATU", "SGBBU", "AKTU"],
+  branches: ["AI & ML", "Computer", "IT", "Mechanical", "Civil", "Electrical", "E&TC", "Chemical", "AI & DS"],
   years: ["FE", "SE", "TE", "BE"],
   types: ["Syllabus", "Notes", "Question Papers", "Important Questions"],
 };

@@ -65,9 +65,9 @@
   <div class="row"><span class="hint" id="who"></span><button class="uni-btn sp" id="adOut">Logout</button></div>
   <form id="upForm" class="f card mt up2"><h2>📤 Upload Files <small class="muted">(admin only)</small></h2>
     <div class="up-step"><b>1 · Where should it appear?</b>
-      <div class="up-grid"><label>University<select id="uUni"></select></label><label>Branch<select id="uBranch"></select></label><label>Year<select id="uYear"></select></label><label>Type<select id="uType"></select></label></div>
+      <div class="up-grid"><label>University<select id="uUni"></select></label><label>Branch<select id="uBranch"></select></label><label>Year<select id="uYear"></select></label><label>Semester<select id="uSem" required></select></label><label>Type<select id="uType"></select></label></div>
       <label>Subject<div class="up-subj"><select id="uSubject"></select><button type="button" class="uni-btn" id="addSubj">＋ New</button></div></label>
-      <div class="up-subj" id="newSubRow" hidden><input id="newSub" class="search" maxlength="80" placeholder="New subject name, e.g. Data Structures"><select id="newSem" aria-label="Semester"></select><button type="button" class="uni-btn" id="saveSub">Add</button></div>
+      <div class="up-subj" id="newSubRow" hidden><input id="newSub" class="search" maxlength="80" placeholder="New subject name, e.g. Data Structures"><button type="button" class="uni-btn" id="saveSub">Add</button></div>
     </div>
     <div class="up-step"><b>2 · Add files</b>
       <div class="drop" id="drop" tabindex="0" role="button" aria-label="Choose files"><span>📁</span><b>Drag &amp; drop files here</b><small>or tap to browse · PDF, image, Word, PPT, Excel… · max 20 MB each · multiple allowed</small><input id="uFile" type="file" multiple hidden></div>
@@ -101,7 +101,7 @@
 
 <dialog id="modal" class="modal">
   <div class="modal-head"><h3 id="mTitle">Study material</h3><button class="icon-btn" id="mClose" aria-label="Close">✕</button></div>
-  <div class="filters"><label>University<select id="fUni"></select></label><label>Branch<select id="fBranch"></select></label><label>Year<select id="fYear"></select></label></div>
+  <div class="filters"><label>University<select id="fUni"></select></label><label>Branch<select id="fBranch"></select></label><label>Year<select id="fYear"></select></label><label>Semester<select id="fSem"></select></label></div>
   <div class="tabs" id="tabs"></div><div class="subj-bar" id="subjBar" hidden aria-label="Subjects"></div><ul class="res-list" id="resList"></ul>
 </dialog>
 <dialog id="sheet" class="sheet"><div id="sheetBody"></div></dialog>

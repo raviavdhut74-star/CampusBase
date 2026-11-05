@@ -72,7 +72,7 @@ document.querySelectorAll(".bnav button").forEach(b=>b.onclick=()=>{const n=b.da
 
 // browse files
 let tab=C.types[0];fill("fUni",C.unis);fill("fBranch",C.branches);fill("fYear",C.years,YL);
-function browse(t,sem,title){const u=me();tab=t;SEM=sem||null;subSel=ALLSUB;$("mTitle").textContent=title||"Study material";if(u&&(!u.admin||sem)){$("fUni").value=u.uni;$("fBranch").value=u.branch;$("fYear").value=u.year}if(!$("modal").open)$("modal").showModal();show()}
+function browse(t,sem,title){const u=me();tab=t;SEM=sem||null;subSel=ALLSUB;$("mTitle").textContent=title||"Study material";if(u&&(!u.admin||sem)){$("fUni").value=u.uni;$("fBranch").value=u.branch;$("fYear").value=u.year}fillSem();if(!$("modal").open)$("modal").showModal();show()}
 const ALLSUB="__all__";
 let subjCache=[],subjNames=[],subSel=ALLSUB,SEM=null;
 const subOf=x=>(x.subject||"").trim()||"General";
@@ -92,18 +92,20 @@ function renderRes(){const l=$("resList");l.replaceChildren();
   rows.forEach(x=>{if(subSel===ALLSUB&&!single&&subOf(x)!==last){last=subOf(x);l.append(mk("li","📘 "+last,"grp"))}
     const li=document.createElement("li"),a=mk("a",(x.is_free?"🆓 ":can?"":"🔒 ")+x.title);a.href="#";
     a.onclick=e=>{e.preventDefault();if(!S.user){$("modal").close();toast("Please login first");location.hash="login";return}if(can||x.is_free)openFile(x);else paywall()};
-    li.append(a);if(tab===ALLSUB)li.append(mk("span",x.type,"chip"));l.append(li)})}
+    li.append(a);if(tab===ALLSUB)li.append(mk("span",x.type,"chip"));if(x.semester)li.append(mk("span","Sem "+ROMAN[x.semester],"chip"));l.append(li)})}
+function fillSem(){const s=SEMS[$("fYear").value]||[];$("fSem").innerHTML='<option value="">All semesters</option>'+s.map(n=>`<option value="${n}">Semester ${ROMAN[n]}</option>`).join("")}
 async function show(){const t=$("tabs");t.replaceChildren();[ALLSUB,...C.types].forEach(x=>{const b=mk("button",x===ALLSUB?"All":x);b.setAttribute("aria-selected",x===tab);b.onclick=()=>{tab=x;show()};t.append(b)});
   const l=$("resList");l.replaceChildren(mk("li","Loading…","none"));
-  const U=$("fUni").value,B=$("fBranch").value,Y=$("fYear").value;
-  let rq=supabase.from("resources").select("*").eq("university",U).eq("branch",B).eq("year",Y);if(tab!==ALLSUB)rq=rq.eq("type",tab);
-  const[r,s]=await Promise.all([rq.order("created_at",{ascending:false}),
-    supabase.from("subjects").select("name").eq("university",U).eq("branch",B).eq("year",Y)]);
+  const U=$("fUni").value,B=$("fBranch").value,Y=$("fYear").value,SM=$("fSem").value;
+  // ONLY the selected university + branch + year (+ semester / subject) — nothing from other branches
+  let rq=supabase.from("resources").select("*").eq("university",U).eq("branch",B).eq("year",Y);
+  if(tab!==ALLSUB)rq=rq.eq("type",tab);if(SM)rq=rq.eq("semester",+SM);if(SEM)rq=rq.in("subject",SEM);
+  const[r,s]=await Promise.all([rq.order("created_at",{ascending:false}),supabase.from("subjects").select("name,semester").eq("university",U).eq("branch",B).eq("year",Y)]);
   if(r.error){l.replaceChildren(mk("li",r.error.message,"none"));return}
-  subjCache=r.data;subjNames=(s.data||[]).map(x=>x.name);
+  subjCache=r.data;subjNames=(s.data||[]).filter(x=>!SM||!x.semester||x.semester===+SM).map(x=>x.name);
   if(SEM){const set=new Set(SEM);subjCache=subjCache.filter(x=>set.has(subOf(x)));subjNames=SEM}
   renderSubj();renderRes()}
-["fUni","fBranch","fYear"].forEach(i=>$(i).onchange=()=>{SEM=null;subSel=ALLSUB;$("mTitle").textContent="Study material";show()});$("mClose").onclick=()=>$("modal").close();
+["fUni","fBranch","fYear"].forEach(i=>$(i).onchange=()=>{SEM=null;subSel=ALLSUB;$("mTitle").textContent="Study material";if(i==="fYear")fillSem();show()});$("fSem").onchange=()=>{subSel=ALLSUB;show()};$("mClose").onclick=()=>$("modal").close();
 
 // profile sheet
 async function saveProf(patch){const{error}=await supabase.from("profiles").update(patch).eq("id",S.user.id);if(error)return toast(error.message),false;await load();home();return true}
@@ -175,18 +177,18 @@ $("adOut").onclick=logout;
 fill("uUni",C.unis);fill("uBranch",C.branches);fill("uYear",C.years,YL);fill("uType",C.types);
 const MAXB=20*1024*1024;
 // Subject = dropdown of subjects saved for the chosen university/branch/year. "＋ New" adds one to the list.
-async function loadSubj(keep){const{data,error}=await supabase.from("subjects").select("name").eq("university",$("uUni").value).eq("branch",$("uBranch").value).eq("year",$("uYear").value).order("name");
-  if(error)toast("Subjects: "+error.message+" (run subject_setup.sql)");
-  const names=(data||[]).map(r=>r.name);
-  const sems=({FE:[1,2],SE:[3,4],TE:[5,6],BE:[7,8]})[$("uYear").value]||[];
-  $("newSem").innerHTML='<option value="">Semester (optional)</option>'+sems.map(n=>`<option value="${n}">Sem ${ROMAN[n]}</option>`).join("");
+let SUBJ_ALL=[];
+function semOpts(){const s=SEMS[$("uYear").value]||[],cur=$("uSem").value;$("uSem").innerHTML=s.map(n=>`<option value="${n}">Semester ${ROMAN[n]}</option>`).join("");if(s.map(String).includes(cur))$("uSem").value=cur}
+function subjOptsUp(keep){const sem=+$("uSem").value,names=SUBJ_ALL.filter(r=>!r.semester||r.semester===sem).map(r=>r.name);   // subjects of the chosen semester
   $("uSubject").innerHTML=names.length?'<option value="">Select subject…</option>'+opts(names):'<option value="">No subjects yet — tap ＋ New</option>';
   const m=keep&&names.find(n=>n.toLowerCase()===keep.toLowerCase());if(m)$("uSubject").value=m}
-["uUni","uBranch","uYear"].forEach(i=>$(i).addEventListener("change",()=>loadSubj()));
+async function loadSubj(keep){semOpts();const{data,error}=await supabase.from("subjects").select("name,semester").eq("university",$("uUni").value).eq("branch",$("uBranch").value).eq("year",$("uYear").value).order("name");
+  if(error)toast("Subjects: "+error.message+" (run subject_setup.sql)");SUBJ_ALL=data||[];subjOptsUp(keep)}
+["uUni","uBranch","uYear"].forEach(i=>$(i).addEventListener("change",()=>loadSubj()));$("uSem").addEventListener("change",()=>subjOptsUp($("uSubject").value));
 $("addSubj").onclick=()=>{const r=$("newSubRow");r.hidden=!r.hidden;if(!r.hidden)$("newSub").focus()};
 $("newSub").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();$("saveSub").click()}};
 $("saveSub").onclick=async()=>{if(!S.admin)return toast("Admins only");const n=$("newSub").value.trim().replace(/\s+/g," ");if(!n)return toast("Enter a subject name");
-  const{error}=await supabase.from("subjects").insert({university:$("uUni").value,branch:$("uBranch").value,year:$("uYear").value,name:n,semester:+$("newSem").value||null});
+  const{error}=await supabase.from("subjects").insert({university:$("uUni").value,branch:$("uBranch").value,year:$("uYear").value,name:n,semester:+$("uSem").value||null});
   if(error&&!/duplicate|unique/i.test(error.message))return toast(error.message);
   $("newSub").value="";$("newSubRow").hidden=true;await loadSubj(n);toast(error?"Subject already exists — selected":"Subject added ✓")};
 
@@ -211,7 +213,7 @@ $("upForm").onsubmit=async e=>{e.preventDefault();if(!S.admin)return toast("Admi
   const todo=Q.filter(q=>q.state==="ready"||q.state==="error");if(!todo.length)return toast("Add at least one file");
   if(todo.some(q=>!q.title.trim()))return toast("Every file needs a title");
   const btn=$("upGo");btn.disabled=true;let ok=0;
-  const meta={university:$("uUni").value,branch:$("uBranch").value,year:$("uYear").value,type:$("uType").value,subject,is_free:$("uFree").checked};
+  const meta={university:$("uUni").value,branch:$("uBranch").value,year:$("uYear").value,type:$("uType").value,subject,semester:+$("uSem").value||null,is_free:$("uFree").checked};
   for(let i=0;i<todo.length;i++){const q=todo[i],f=q.file;q.state="up";btn.textContent=`Uploading ${i+1}/${todo.length}…`;renderQ();
     const path=`${crypto.randomUUID()}-${f.name.replace(/[^a-zA-Z0-9._-]/g,"_")}`;
     const{error:ue}=await supabase.storage.from(BUCKET).upload(path,f,{contentType:f.type||"application/octet-stream"});
@@ -231,7 +233,7 @@ function renderUp(){const l=$("upList"),q=$("upSearch").value.trim().toLowerCase
   rows.forEach(x=>{const li=document.createElement("li"),a=mk("a",x.title);a.href="#";a.onclick=e=>{e.preventDefault();openFile(x)};const b=mk("button","Delete","danger-btn");
     b.onclick=async()=>{if(!confirm(`Delete "${x.title}"?`))return;b.disabled=true;const{error:e1}=await supabase.storage.from(BUCKET).remove([x.file_path]);if(e1){b.disabled=false;return toast("File delete failed: "+e1.message)}
       const{error:e2}=await supabase.from("resources").delete().eq("id",x.id);if(e2){b.disabled=false;return toast(e2.message)}toast("Deleted ✓");list()};
-    li.append(a,mk("span",`${x.university} · ${x.branch} · ${x.year} · ${x.type}${x.subject?" · "+x.subject:""}${x.is_free?" · FREE":""}`),b);l.append(li)})}
+    li.append(a,mk("span",`${x.university} · ${x.branch} · ${x.year}${x.semester?" · Sem "+ROMAN[x.semester]:""} · ${x.type}${x.subject?" · "+x.subject:""}${x.is_free?" · FREE":""}`),b);l.append(li)})}
 async function list(){const l=$("upList");l.replaceChildren(mk("li","Loading…","none"));
   const{data,error}=await supabase.from("resources").select("*").order("created_at",{ascending:false});
   if(error)return l.replaceChildren(mk("li",error.message,"none"));
@@ -245,7 +247,7 @@ $("upSearch").oninput=renderUp;$("upFilt").onchange=renderUp;
 // ---- branch page: shown after the student's branch is known (like: Semester cards + Question Bank + Answer Bank) ----
 const BR_FULL={"AI & ML":"Artificial Intelligence & Machine Learning","AI & DS":"Artificial Intelligence & Data Science",Computer:"Computer Engineering",IT:"Information Technology",Mechanical:"Mechanical Engineering",Civil:"Civil Engineering",Electrical:"Electrical Engineering","E&TC":"Electronics & Telecommunication",Chemical:"Chemical Engineering"};
 const BR_ICON={"AI & ML":"🤖","AI & DS":"📊",Computer:"💻",IT:"🌐",Mechanical:"⚙️",Civil:"🏗️",Electrical:"⚡","E&TC":"📡",Chemical:"🧪"};
-const YS={FE:"FY",SE:"SY",TE:"TY",BE:"Final Year"},ROMAN=["","I","II","III","IV","V","VI","VII","VIII"];
+const YS={FE:"FY",SE:"SY",TE:"TY",BE:"Final Year"},ROMAN=["","I","II","III","IV","V","VI","VII","VIII"],SEMS={FE:[1,2],SE:[3,4],TE:[5,6],BE:[7,8]};
 const goBranch=()=>{if(location.hash==="#branch")route();else location.hash="branch"};
 const brief=a=>a.slice(0,5).join(", ")+(a.length>5?" & more":"");
 async function branchPage(){const u=me();if(!u)return;const full=BR_FULL[u.branch]||u.branch,ys=YS[u.year]||u.year;
