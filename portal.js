@@ -72,7 +72,7 @@ document.querySelectorAll(".bnav button").forEach(b=>b.onclick=()=>{const n=b.da
 
 // browse files
 let tab=C.types[0];fill("fUni",C.unis);fill("fBranch",C.branches);fill("fYear",C.years,YL);
-function browse(t,sem){const u=me();tab=t;SEM=sem||null;subSel=ALLSUB;if(u&&(!u.admin||sem)){$("fUni").value=u.uni;$("fBranch").value=u.branch;$("fYear").value=u.year}if(!$("modal").open)$("modal").showModal();show()}
+function browse(t,sem,title){const u=me();tab=t;SEM=sem||null;subSel=ALLSUB;$("mTitle").textContent=title||"Study material";if(u&&(!u.admin||sem)){$("fUni").value=u.uni;$("fBranch").value=u.branch;$("fYear").value=u.year}if(!$("modal").open)$("modal").showModal();show()}
 const ALLSUB="__all__";
 let subjCache=[],subjNames=[],subSel=ALLSUB,SEM=null;
 const subOf=x=>(x.subject||"").trim()||"General";
@@ -81,27 +81,29 @@ function renderSubj(){const bar=$("subjBar");bar.replaceChildren();
   const cnt={};subjCache.forEach(x=>{const k=subOf(x);cnt[k]=(cnt[k]||0)+1});
   const names=[...new Set([...subjNames,...Object.keys(cnt)])].sort((a,b)=>a.localeCompare(b));
   if(subSel!==ALLSUB&&!names.includes(subSel))subSel=ALLSUB;
-  bar.hidden=!names.length;
+  bar.hidden=!names.length||!!(SEM&&SEM.length===1);
   [[ALLSUB,"All subjects"],...names.map(n=>[n,n+(cnt[n]?" ("+cnt[n]+")":"")])].forEach(([v,t])=>{const b=mk("button",t,"sj"+(v!==ALLSUB&&!cnt[v]?" sj0":""));b.type="button";b.setAttribute("aria-pressed",v===subSel);b.onclick=()=>{subSel=v;renderSubj();renderRes()};bar.append(b)})}
 function renderRes(){const l=$("resList");l.replaceChildren();
   let rows=subjCache.filter(x=>subSel===ALLSUB||subOf(x)===subSel);
   if(!rows.length)return l.append(mk("li","Nothing uploaded here yet.","none"));
   if(subSel===ALLSUB)rows=rows.map((x,i)=>[x,i]).sort((a,b)=>subOf(a[0]).localeCompare(subOf(b[0]))||a[1]-b[1]).map(r=>r[0]);
   const can=!!S.user&&(S.admin||!!S.sub);let last=null;
-  rows.forEach(x=>{if(subSel===ALLSUB&&subOf(x)!==last){last=subOf(x);l.append(mk("li","📘 "+last,"grp"))}
+  const single=!!(SEM&&SEM.length===1);
+  rows.forEach(x=>{if(subSel===ALLSUB&&!single&&subOf(x)!==last){last=subOf(x);l.append(mk("li","📘 "+last,"grp"))}
     const li=document.createElement("li"),a=mk("a",(x.is_free?"🆓 ":can?"":"🔒 ")+x.title);a.href="#";
     a.onclick=e=>{e.preventDefault();if(!S.user){$("modal").close();toast("Please login first");location.hash="login";return}if(can||x.is_free)openFile(x);else paywall()};
-    li.append(a);l.append(li)})}
-async function show(){const t=$("tabs");t.replaceChildren();C.types.forEach(x=>{const b=mk("button",x);b.setAttribute("aria-selected",x===tab);b.onclick=()=>{tab=x;show()};t.append(b)});
+    li.append(a);if(tab===ALLSUB)li.append(mk("span",x.type,"chip"));l.append(li)})}
+async function show(){const t=$("tabs");t.replaceChildren();[ALLSUB,...C.types].forEach(x=>{const b=mk("button",x===ALLSUB?"All":x);b.setAttribute("aria-selected",x===tab);b.onclick=()=>{tab=x;show()};t.append(b)});
   const l=$("resList");l.replaceChildren(mk("li","Loading…","none"));
   const U=$("fUni").value,B=$("fBranch").value,Y=$("fYear").value;
-  const[r,s]=await Promise.all([supabase.from("resources").select("*").eq("university",U).eq("branch",B).eq("year",Y).eq("type",tab).order("created_at",{ascending:false}),
+  let rq=supabase.from("resources").select("*").eq("university",U).eq("branch",B).eq("year",Y);if(tab!==ALLSUB)rq=rq.eq("type",tab);
+  const[r,s]=await Promise.all([rq.order("created_at",{ascending:false}),
     supabase.from("subjects").select("name").eq("university",U).eq("branch",B).eq("year",Y)]);
   if(r.error){l.replaceChildren(mk("li",r.error.message,"none"));return}
   subjCache=r.data;subjNames=(s.data||[]).map(x=>x.name);
   if(SEM){const set=new Set(SEM);subjCache=subjCache.filter(x=>set.has(subOf(x)));subjNames=SEM}
   renderSubj();renderRes()}
-["fUni","fBranch","fYear"].forEach(i=>$(i).onchange=()=>{SEM=null;subSel=ALLSUB;show()});$("mClose").onclick=()=>$("modal").close();
+["fUni","fBranch","fYear"].forEach(i=>$(i).onchange=()=>{SEM=null;subSel=ALLSUB;$("mTitle").textContent="Study material";show()});$("mClose").onclick=()=>$("modal").close();
 
 // profile sheet
 async function saveProf(patch){const{error}=await supabase.from("profiles").update(patch).eq("id",S.user.id);if(error)return toast(error.message),false;await load();home();return true}
@@ -219,7 +221,7 @@ $("upForm").onsubmit=async e=>{e.preventDefault();if(!S.admin)return toast("Admi
     if(error){await supabase.storage.from(BUCKET).remove([path]);q.state="error";q.err=error.message;continue}
     q.state="done";ok++}
   Q=Q.filter(q=>q.state!=="done");renderQ();btn.disabled=false;btn.textContent="Upload";
-  toast(ok?`${ok} file(s) uploaded ✓`+(Q.length?` · ${Q.length} failed`:""):"Upload failed");if(ok){$("uFree").checked=false;list()}};
+  toast(ok?`${ok} file(s) uploaded ✓`+(Q.length?` · ${Q.length} failed`:""):"Upload failed");if(ok)list()};
 
 // uploaded files: search + subject filter + delete
 let UP=[];
@@ -250,13 +252,21 @@ async function branchPage(){const u=me();if(!u)return;const full=BR_FULL[u.branc
   $("brHead").innerHTML=`<span class="av" style="border-radius:14px">${BR_ICON[u.branch]||"🎓"}</span><div><b>${esc(full)}</b><div class="muted">${esc(u.uni)} | ${esc(YL[u.year]||u.year)} 2025–26</div><span class="chip">${esc(ys.toUpperCase())} ENGINEERING</span></div>`;
   $("brSub").textContent=`${ys} ${full} — Notes, PYQ, Question Bank & Answer Bank`;
   const g=$("brGrid");g.replaceChildren(mk("div","Loading…","muted"));
-  const{data}=await supabase.from("subjects").select("name,semester").eq("university",u.uni).eq("branch",u.branch).eq("year",u.year).order("name");
-  const by={};(data||[]).forEach(r=>{const k=r.semester||0;(by[k]=by[k]||[]).push(r.name)});
-  const cards=Object.keys(by).map(Number).sort((a,b)=>a-b).map(k=>({ic:"📚",t:k?"Semester "+ROMAN[k]:"Subject-wise Notes",d:(k?"Semester "+ROMAN[k]+" — ":"")+"subject-wise notes ("+brief(by[k])+")",tag:k?"Sem "+ROMAN[k]:"All subjects",go:()=>browse("Notes",by[k])}));
+  const[sj,rs]=await Promise.all([
+    supabase.from("subjects").select("name,semester").eq("university",u.uni).eq("branch",u.branch).eq("year",u.year).order("name"),
+    supabase.from("resources").select("subject").eq("university",u.uni).eq("branch",u.branch).eq("year",u.year)]);
+  const cnt={};(rs.data||[]).forEach(r=>{const k=(r.subject||"").trim()||"General";cnt[k]=(cnt[k]||0)+1});
+  const by={},known=new Set();(sj.data||[]).forEach(r=>{known.add(r.name);const k=r.semester||0;(by[k]=by[k]||[]).push(r.name)});
+  const extra=Object.keys(cnt).filter(n=>!known.has(n)).sort();if(extra.length)by[99]=extra;   // files whose subject is not in the list still show up
+  const el=[];
+  const box=(ic,t,d,go,zero)=>{const c=mk("div",null,"card dc br-card"+(zero?" zero":""));c.innerHTML=`<span class="ic">${ic}</span><b>${esc(t)}</b><span class="muted">${esc(d)}</span>`;const bt=mk("button","Open →","uni-btn");bt.onclick=go;c.append(bt);return c};
+  Object.keys(by).map(Number).sort((x,y)=>x-y).forEach(k=>{
+    el.push(mk("h3",k===99?"Other material":k?"Semester "+ROMAN[k]+" — Subjects":"Subjects","sec"));
+    by[k].forEach(n=>el.push(box("📘",n,cnt[n]?cnt[n]+" file"+(cnt[n]>1?"s":"")+" uploaded":"No files yet",()=>browse(ALLSUB,[n],n),!cnt[n])))});
+  el.push(mk("h3","Resources","sec"));
   [["🗄️","Question Bank","Exam-focused question bank — subject-wise","Question Bank"],["⭐","Answer Bank","Solved answers — exam-focused answer bank","Answer Bank"],["📄","Previous Year Papers","Previous year question papers — subject-wise","Previous Year Papers"]]
-    .forEach(([ic,t,d,ty])=>cards.push({ic,t,d,tag:t,go:()=>browse(ty)}));
-  g.replaceChildren(...cards.map(c=>{const d=mk("div",null,"card dc br-card");d.innerHTML=`<span class="ic">${c.ic}</span><b>${esc(c.t)}</b><span class="muted">${esc(c.d)}</span>`;
-    const b=mk("button","Open →","uni-btn");b.onclick=c.go;d.append(b,mk("span",c.tag,"chip"));return d}))}
+    .forEach(([ic,t,d,ty])=>el.push(box(ic,t,d,()=>browse(ty))));
+  g.replaceChildren(...el)}
 
 // ---- info pages: every menu item / card / bottom-nav tab opens a real screen ----
 const APK_URL=""; // paste your APK download link here when ready
