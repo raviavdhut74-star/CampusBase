@@ -20,13 +20,18 @@ async function loadList() {
     const a = document.createElement("a");
     a.href = r.file_url; a.target = "_blank"; a.rel = "noopener"; a.textContent = r.title;
     const meta = document.createElement("span");
-    meta.textContent = `${r.university} · ${r.branch} · ${r.year} · ${r.type}`;
+    meta.textContent = `${r.university} · ${r.branch} · ${r.year} · ${r.type}${r.subject ? " · " + r.subject : ""}`;
     const del = document.createElement("button");
     del.className = "danger-btn"; del.textContent = "Delete";
     del.onclick = () => removeItem(r, del);
     li.append(a, meta, del);
     ul.append(li);
   }
+}
+
+async function subjHints() {
+  const { data } = await supabase.from("resources").select("subject").eq("university", $("uni").value).eq("branch", $("branch").value).eq("year", $("year").value).not("subject", "is", null);
+  $("subjList").replaceChildren(...[...new Set((data || []).map((r) => r.subject).filter(Boolean))].sort().map((v) => new Option(v, v)));
 }
 
 async function removeItem(r, btn) {
@@ -55,7 +60,7 @@ $("form").addEventListener("submit", async (e) => {
 
   const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(path);
   const { error } = await supabase.from("resources").insert({
-    university: $("uni").value, branch: $("branch").value, year: $("year").value, type: $("type").value,
+    university: $("uni").value, branch: $("branch").value, year: $("year").value, type: $("type").value, subject: $("subject").value.trim(),
     title: $("title").value.trim(), file_path: path, file_url: pub.publicUrl,
   });
   if (error) {
@@ -64,7 +69,7 @@ $("form").addEventListener("submit", async (e) => {
   } else {
     toast("Upload ho gaya ✓");
     $("form").reset();
-    loadList();
+    loadList(); subjHints();
   }
   btn.disabled = false; btn.textContent = "Upload";
 });
@@ -79,5 +84,6 @@ $("logout").onclick = async () => { await supabase.auth.signOut(); location.repl
   fill("uni", CATALOG.universities); fill("branch", CATALOG.branches);
   fill("year", CATALOG.years); fill("type", CATALOG.types);
   $("msg").hidden = true; $("panel").hidden = false;
-  loadList();
+  ["uni", "branch", "year"].forEach((i) => $(i).addEventListener("change", subjHints));
+  loadList(); subjHints();
 })();

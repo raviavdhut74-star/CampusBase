@@ -57,6 +57,7 @@
   <div class="row"><span class="hint" id="who"></span><button class="uni-btn sp" id="adOut">Logout</button></div>
   <form id="upForm" class="f card mt"><h2>📤 Upload Files (admin only)</h2>
     <label>University<select id="uUni"></select></label><label>Branch<select id="uBranch"></select></label><label>Year<select id="uYear"></select></label><label>Type<select id="uType"></select></label>
+    <label>Subject<input id="uSubject" class="search" list="subjList" required maxlength="80" placeholder="e.g. Data Structures" autocomplete="off"></label><datalist id="subjList"></datalist>
     <label>Title<input id="uTitle" class="search" required maxlength="120"></label><label>File — PDF, image, Word, PPT, Excel… (max 20 MB)<input id="uFile" type="file" required></label>
     <button class="primary-btn" type="submit">Upload</button></form>
   <h3 class="sec">Uploaded files — delete anytime</h3><ul class="saved-list" id="upList"></ul>
@@ -83,7 +84,7 @@
 
 <dialog id="modal" class="modal">
   <div class="modal-head"><h3 id="mTitle">Study material</h3><button class="icon-btn" id="mClose" aria-label="Close">✕</button></div>
-  <div class="filters"><label>University<select id="fUni"></select></label><label>Branch<select id="fBranch"></select></label><label>Year<select id="fYear"></select></label></div>
+  <div class="filters"><label>University<select id="fUni"></select></label><label>Branch<select id="fBranch"></select></label><label>Year<select id="fYear"></select></label><label>Subject<select id="fSub"></select></label></div>
   <div class="tabs" id="tabs"></div><ul class="res-list" id="resList"></ul>
 </dialog>
 <dialog id="sheet" class="sheet"><div id="sheetBody"></div></dialog>
