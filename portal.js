@@ -70,24 +70,34 @@ document.querySelectorAll(".bnav button").forEach(b=>b.onclick=()=>{const n=b.da
 
 // browse files
 let tab=C.types[0];fill("fUni",C.unis);fill("fBranch",C.branches);fill("fYear",C.years,YL);
-function browse(t){const u=me();tab=t;$("fSub").innerHTML=`<option value="${"__all__"}">All subjects</option>`;if(u&&!u.admin){$("fUni").value=u.uni;$("fBranch").value=u.branch;$("fYear").value=u.year}if(!$("modal").open)$("modal").showModal();show()}
-let subjCache=[];
+function browse(t){const u=me();tab=t;subSel=ALLSUB;if(u&&!u.admin){$("fUni").value=u.uni;$("fBranch").value=u.branch;$("fYear").value=u.year}if(!$("modal").open)$("modal").showModal();show()}
 const ALLSUB="__all__";
-function subjOpts(keep){const subs=[...new Set(subjCache.map(x=>(x.subject||"").trim()||"General"))].sort((a,b)=>a.localeCompare(b));
-  $("fSub").innerHTML=`<option value="${ALLSUB}">All subjects</option>`+opts(subs,keep&&subs.includes(keep)?keep:null);if(keep&&subs.includes(keep))$("fSub").value=keep}
-function renderRes(){const l=$("resList"),sv=$("fSub").value;l.replaceChildren();
-  const rows=subjCache.filter(x=>sv===ALLSUB||((x.subject||"").trim()||"General")===sv);
+let subjCache=[],subjNames=[],subSel=ALLSUB;
+const subOf=x=>(x.subject||"").trim()||"General";
+// subject chips: every subject saved for this university/branch/year (even with 0 files) + subjects found on files
+function renderSubj(){const bar=$("subjBar");bar.replaceChildren();
+  const cnt={};subjCache.forEach(x=>{const k=subOf(x);cnt[k]=(cnt[k]||0)+1});
+  const names=[...new Set([...subjNames,...Object.keys(cnt)])].sort((a,b)=>a.localeCompare(b));
+  if(subSel!==ALLSUB&&!names.includes(subSel))subSel=ALLSUB;
+  bar.hidden=!names.length;
+  [[ALLSUB,"All subjects"],...names.map(n=>[n,n+(cnt[n]?" ("+cnt[n]+")":"")])].forEach(([v,t])=>{const b=mk("button",t,"sj"+(v!==ALLSUB&&!cnt[v]?" sj0":""));b.type="button";b.setAttribute("aria-pressed",v===subSel);b.onclick=()=>{subSel=v;renderSubj();renderRes()};bar.append(b)})}
+function renderRes(){const l=$("resList");l.replaceChildren();
+  let rows=subjCache.filter(x=>subSel===ALLSUB||subOf(x)===subSel);
   if(!rows.length)return l.append(mk("li","Nothing uploaded here yet.","none"));
-  const can=!!S.user&&(S.admin||!!S.sub);
-  rows.forEach(x=>{const li=document.createElement("li"),a=mk("a",(x.is_free?"🆓 ":can?"":"🔒 ")+x.title);a.href="#";
+  if(subSel===ALLSUB)rows=rows.map((x,i)=>[x,i]).sort((a,b)=>subOf(a[0]).localeCompare(subOf(b[0]))||a[1]-b[1]).map(r=>r[0]);
+  const can=!!S.user&&(S.admin||!!S.sub);let last=null;
+  rows.forEach(x=>{if(subSel===ALLSUB&&subOf(x)!==last){last=subOf(x);l.append(mk("li","📘 "+last,"grp"))}
+    const li=document.createElement("li"),a=mk("a",(x.is_free?"🆓 ":can?"":"🔒 ")+x.title);a.href="#";
     a.onclick=e=>{e.preventDefault();if(!S.user){$("modal").close();toast("Please login first");location.hash="login";return}if(can||x.is_free)openFile(x);else paywall()};
-    li.append(a);if(x.subject)li.append(mk("span",x.subject,"chip"));l.append(li)})}
+    li.append(a);l.append(li)})}
 async function show(){const t=$("tabs");t.replaceChildren();C.types.forEach(x=>{const b=mk("button",x);b.setAttribute("aria-selected",x===tab);b.onclick=()=>{tab=x;show()};t.append(b)});
   const l=$("resList");l.replaceChildren(mk("li","Loading…","none"));
-  const{data,error}=await supabase.from("resources").select("*").eq("university",$("fUni").value).eq("branch",$("fBranch").value).eq("year",$("fYear").value).eq("type",tab).order("created_at",{ascending:false});
-  if(error){l.replaceChildren(mk("li",error.message,"none"));return}
-  subjCache=data;subjOpts($("fSub").value);renderRes()}
-["fUni","fBranch","fYear"].forEach(i=>$(i).onchange=()=>{$("fSub").value=ALLSUB;show()});$("fSub").onchange=renderRes;$("mClose").onclick=()=>$("modal").close();
+  const U=$("fUni").value,B=$("fBranch").value,Y=$("fYear").value;
+  const[r,s]=await Promise.all([supabase.from("resources").select("*").eq("university",U).eq("branch",B).eq("year",Y).eq("type",tab).order("created_at",{ascending:false}),
+    supabase.from("subjects").select("name").eq("university",U).eq("branch",B).eq("year",Y)]);
+  if(r.error){l.replaceChildren(mk("li",r.error.message,"none"));return}
+  subjCache=r.data;subjNames=(s.data||[]).map(x=>x.name);renderSubj();renderRes()}
+["fUni","fBranch","fYear"].forEach(i=>$(i).onchange=()=>{subSel=ALLSUB;show()});$("mClose").onclick=()=>$("modal").close();
 
 // profile sheet
 async function saveProf(patch){const{error}=await supabase.from("profiles").update(patch).eq("id",S.user.id);if(error)return toast(error.message),false;await load();home();return true}
