@@ -136,3 +136,9 @@ body{background:linear-gradient(rgba(2,8,22,.18),rgba(2,8,22,.18)),url("bg.jpg")
 @keyframes cardPop{0%{transform:scale(1)}40%{transform:scale(.985)}100%{transform:scale(1)}}
 .nf-in input,.nf-in select{transition:border-color .25s ease}
 
+
+/* ---- info pages ---- */
+.empty-pg{text-align:center;padding:26px 10px}.empty-pg span{font-size:2.2rem;display:block;margin-bottom:6px}.empty-pg p{margin-top:4px}
+.soc-b{color:#fff;border-radius:12px;padding:12px;font-weight:600}.soc-b.off{opacity:.45;filter:grayscale(.6)}
+#sheetBody textarea.search{width:100%;resize:vertical;border-radius:12px;padding:11px 14px;border:1px solid var(--line);background:var(--card);color:var(--text);font:inherit}
+#sheetBody h3{margin-bottom:8px}#sheetBody .saved-list{margin-top:10px}

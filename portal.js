@@ -2,9 +2,9 @@
 import { supabase, BUCKET, CATALOG, isAdmin } from "./supabase.js";
 
 // Social links are OFF for now. Set on:true and a url to enable later.
-const SOCIAL={instagram:{on:false,url:""},whatsapp:{on:true,url:"https://chat.whatsapp.com/ICt2INQ4g2JEKB8urgboBd"},telegram:{on:true,url:"https://t.me/campusbase_study_material"}};
+const SOCIAL={instagram:{on:true,url:"https://www.instagram.com/campus_base"},whatsapp:{on:true,url:"https://chat.whatsapp.com/ICt2INQ4g2JEKB8urgboBd"},telegram:{on:true,url:"https://t.me/campusbase_study_material"}};
 const C={unis:["SPPU","BATU","SGBBU","AKTU"],branches:[...new Set(["AI & ML",...CATALOG.branches])],years:CATALOG.years,
-  types:[...new Set(["Notes","Handwritten Notes","Question Bank","Answer Bank","Formula Notes","Previous Year Papers","Books",...CATALOG.types])]};
+  types:[...new Set(["Notes","Handwritten Notes","Question Bank","Answer Bank","Formula Notes","Previous Year Papers","Books","MCQ",...CATALOG.types])]};
 const YL={FE:"First Year",SE:"Second Year",TE:"Third Year",BE:"Final Year"};
 const $=id=>document.getElementById(id);
 const toast=t=>{const e=$("toast");e.textContent=t;e.classList.add("show");setTimeout(()=>e.classList.remove("show"),2600)};
@@ -30,7 +30,7 @@ const th=(()=>{try{return localStorage.getItem("cb2_theme")}catch{return null}})
 
 // drawer
 const T=t=>"type:"+t;
-const MENU=[["⭐","Premium","premium"],["👥","Social Mode","soon"],["🏠","Home","home"],["📗","Notes",T("Notes")],["✍️","Handwritten Notes",T("Handwritten Notes")],["🗄️","Question Bank",T("Question Bank")],["⭐","Answer Bank",T("Answer Bank")],["☑️","MCQ","soon"],["🏆","Leaderboard","soon"],["💬","Doubt Solving","soon"],["√x","Formula Notes",T("Formula Notes")],["📄","Previous Year Papers",T("Previous Year Papers")],["📕","Books",T("Books")],["⬇️","Downloads","soon"],["🎖️","Certificates","soon"],["📝","Revaluation Score","soon"],["🎁","Refer & Earn","soon"],["📱","Download App","soon"],["🧾","Payment Receipt","soon"],["ℹ️","About Us","foot"],["📸","Follow on Instagram","s:instagram"],["💚","Join WhatsApp Group","s:whatsapp"],["✈️","Join Telegram","s:telegram"],["✉️","Contact Us","foot"],["⚙️","Settings","soon"]];
+const MENU=[["⭐","Premium","premium"],["👥","Social Mode","pg:social"],["🏠","Home","home"],["📗","Notes",T("Notes")],["✍️","Handwritten Notes",T("Handwritten Notes")],["🗄️","Question Bank",T("Question Bank")],["⭐","Answer Bank",T("Answer Bank")],["☑️","MCQ",T("MCQ")],["🏆","Leaderboard","pg:leader"],["💬","Doubt Solving","pg:doubt"],["√x","Formula Notes",T("Formula Notes")],["📄","Previous Year Papers",T("Previous Year Papers")],["📕","Books",T("Books")],["⬇️","Downloads","pg:dl"],["🎖️","Certificates","pg:cert"],["📝","Revaluation Score","pg:reval"],["🎁","Refer & Earn","pg:refer"],["📱","Download App","pg:apk"],["🧾","Payment Receipt","pg:receipt"],["ℹ️","About Us","foot"],["📸","Follow on Instagram","s:instagram"],["💚","Join WhatsApp Group","s:whatsapp"],["✈️","Join Telegram","s:telegram"],["✉️","Contact Us","foot"],["⚙️","Settings","pg:settings"]];
 function drawer(){const u=me();
   $("dUser").innerHTML=avatar(u)+`<div><b>${esc(u?u.name:"Guest")}</b><div class="muted">${esc(u?u.branch:"Please login")}</div></div>`;
   const l=$("dList");l.innerHTML="";
@@ -38,7 +38,7 @@ function drawer(){const u=me();
   const li=document.createElement("li"),b=mk("button",u?"⎋  Logout":"⎋  Login / Register","lo");b.onclick=()=>{setDrawer(false);u?logout():(location.hash="login")};li.append(b);l.append(li)}
 const setDrawer=o=>{$("drawer").classList.toggle("on",o);$("scrim").classList.toggle("on",o)};
 $("burger").onclick=()=>{drawer();setDrawer(true)};$("scrim").onclick=()=>setDrawer(false);
-function go(a){if(a==="soon")return soon();if(a==="premium")return paywall();if(a==="home"){location.hash="home";scrollTo(0,0)}else if(a==="admin")location.hash="admin";else if(a==="foot")$("foot").scrollIntoView({behavior:"smooth"});
+function go(a){if(a==="soon")return soon();if(a.startsWith("pg:"))return PAGES[a.slice(3)]();if(a==="premium")return paywall();if(a==="home"){location.hash="home";scrollTo(0,0)}else if(a==="admin")location.hash="admin";else if(a==="foot")$("foot").scrollIntoView({behavior:"smooth"});
   else if(a.startsWith("s:"))social(a.slice(2));else if(a.startsWith("type:"))browse(a.slice(5))}
 
 // routing
@@ -52,21 +52,21 @@ $("backBtn").onclick=()=>history.length>1?history.back():(location.hash="home");
 addEventListener("hashchange",()=>{route();scrollTo(0,0)});
 
 // home
-const CARDS=[["🗄️","Question Bank","5000+ Questions","Question Bank","Explore"],["⭐","Answer Bank","Solved Answers","Answer Bank","Explore"],["📗","Notes","All Subject Notes","Notes","Explore"],["✍️","Handwritten Notes","Topper Handwritten Notes","Handwritten Notes","Explore"],["☑️","MCQ","Practice MCQ",0,"Explore"],["🏆","Leaderboard","Quiz Rankings",0,"View"],["💬","Doubt Solving","Get your doubts solved",0,"Ask Now"],["√x","Formula Notes","All Formulas in one place","Formula Notes","Explore"],["🎖️","Certificates","Your Achievements",0,"View All"]];
+const CARDS=[["🗄️","Question Bank","5000+ Questions","Question Bank","Explore"],["⭐","Answer Bank","Solved Answers","Answer Bank","Explore"],["📗","Notes","All Subject Notes","Notes","Explore"],["✍️","Handwritten Notes","Topper Handwritten Notes","Handwritten Notes","Explore"],["☑️","MCQ","Practice MCQ","MCQ","Explore"],["🏆","Leaderboard","Quiz Rankings","pg:leader","View"],["💬","Doubt Solving","Get your doubts solved","pg:doubt","Ask Now"],["√x","Formula Notes","All Formulas in one place","Formula Notes","Explore"],["🎖️","Certificates","Your Achievements","pg:cert","View All"]];
 const MORE=[["📄","Previous Year Papers","Download previous year question papers","Previous Year Papers","Explore"],["📚","Study Materials","Important books & study materials","Books","Explore"]];
 function card(c){const d=mk("div",null,"card dc");d.innerHTML=`<span class="ic">${c[0]}</span><b>${esc(c[1])}</b><span class="muted">${esc(c[2])}</span>`;
-  const b=mk("button",c[4],"uni-btn");b.onclick=()=>c[3]==="@admin"?(location.hash="admin"):c[3]?browse(c[3]):soon();d.append(b);return d}
+  const b=mk("button",c[4],"uni-btn");b.onclick=()=>c[3]==="@admin"?(location.hash="admin"):c[3]&&c[3].startsWith("pg:")?PAGES[c[3].slice(3)]():c[3]?browse(c[3]):soon();d.append(b);return d}
 function home(){const u=me();
   $("greet").innerHTML=u?`${avatar(u)}<div><b>Hello, ${esc(u.name)}! 👋</b><div class="muted">Keep learning, keep growing.</div>${u.admin?'<span class="chip">Admin</span>':`<span class="chip">${esc(YL[u.year]||"")} Student</span>`}</div><div class="sp muted" style="text-align:right">Your Progress<br>Coming soon</div>`
     :`<span class="av">👋</span><div><b>Hello, Student!</b><div class="muted">Login with your PRN to personalise.</div></div><a class="uni-btn sp" href="#login">Login</a>`;
   $("branchCard").innerHTML=u&&!u.admin?`<span class="av" style="border-radius:12px">🤖</span><div><b>${esc(u.branch)}</b><div class="muted">${esc(u.uni)} · ${esc(YL[u.year])}</div></div><span class="chip sp">Open</span>`:`<div class="muted">${u?"Admin account":"Login to see your branch."}</div>`;
   $("soc").innerHTML="";[["ig","📸 Instagram","instagram"],["wa","💬 WhatsApp","whatsapp"],["tg","✈️ Telegram","telegram"]].forEach(([c,t,k])=>{const b=mk("button",t,c+(SOCIAL[k].on?"":" off"));b.onclick=()=>social(k);$("soc").append(b)});
   $("dash").replaceChildren(...(u&&u.admin?[["📤","Upload Files","Add or delete material","@admin","Open"]]:[]).concat(CARDS).map(card));$("more").replaceChildren(...MORE.map(card));
-  const cb=$("commBtn");cb.className=SOCIAL.whatsapp.on?"":"off";cb.onclick=()=>social("whatsapp");$("apkBtn").onclick=soon}
+  const cb=$("commBtn");cb.className=SOCIAL.whatsapp.on?"":"off";cb.onclick=()=>social("whatsapp");$("apkBtn").onclick=()=>PAGES.apk()}
 $("sidBtn").onclick=async()=>{if(!S.user){toast("Login to search students");return}const q=$("sidIn").value.trim().replace(/^@?/,"@");
   const{data}=await supabase.rpc("find_student",{p_sid:q});const r=data&&data[0];$("sidRes").textContent=r?`✓ ${r.name} · ${r.branch} · ${YL[r.year]||r.year} · ${r.university}`:"No student found with this SID."};
 document.querySelectorAll("[data-soon]").forEach(a=>a.onclick=soon);document.querySelectorAll("[data-soc]").forEach(a=>a.onclick=()=>social(a.dataset.soc));
-document.querySelectorAll(".bnav button").forEach(b=>b.onclick=()=>{const n=b.dataset.n;if(n==="home"){location.hash="home";scrollTo(0,0)}else if(n==="explore"){location.hash="home";setTimeout(()=>$("dash").scrollIntoView({behavior:"smooth"}),50)}else if(n==="prof")profile();else soon()});
+document.querySelectorAll(".bnav button").forEach(b=>b.onclick=()=>{const n=b.dataset.n;if(n==="home"){location.hash="home";scrollTo(0,0)}else if(n==="explore"){location.hash="home";setTimeout(()=>$("dash").scrollIntoView({behavior:"smooth"}),50)}else if(n==="prof")profile();else if(PAGES[n])PAGES[n]();else soon()});
 
 // browse files
 let tab=C.types[0];fill("fUni",C.unis);fill("fBranch",C.branches);fill("fYear",C.years,YL);
@@ -164,8 +164,58 @@ $("upForm").onsubmit=async e=>{e.preventDefault();if(!S.admin)return toast("Admi
   if(error){await supabase.storage.from(BUCKET).remove([path]);toast(error.message)}else{toast("File uploaded ✓");e.target.reset();list()}
   btn.disabled=false;btn.textContent="Upload"};
 
+
+// ---- info pages: every menu item / card / bottom-nav tab opens a real screen ----
+const APK_URL=""; // paste your APK download link here when ready
+const UNI_SITES={SPPU:"https://www.unipune.ac.in",BATU:"https://dbatu.ac.in",SGBBU:"https://www.sgbau.ac.in",AKTU:"https://aktu.ac.in"};
+const dlKey=()=>"cb2_dl_"+(S.user?S.user.id:"guest");
+const dlGet=()=>{try{return JSON.parse(localStorage.getItem(dlKey())||"[]")}catch{return[]}};
+const dlAdd=x=>{try{const l=dlGet().filter(i=>i.id!==x.id);l.unshift({id:x.id,title:x.title,file_path:x.file_path});localStorage.setItem(dlKey(),JSON.stringify(l.slice(0,30)))}catch{}};
+const needLogin=()=>{if($("sheet").open)$("sheet").close();toast("Please login first");location.hash="login"};
+const empty=(ic,t,d)=>`<div class="empty-pg"><span>${ic}</span><b>${esc(t)}</b><p class="muted">${esc(d)}</p></div>`;
+// wire(box) gets the sheet body; use add(text,fn,ghost) to put buttons above Close
+function sheetPage(title,html,wire){const s=$("sheet"),b=$("sheetBody");
+  b.innerHTML=`<h3>${esc(title)}</h3>${html}<button class="primary-btn wide ghost" id="pgX">Close</button>`;$("pgX").onclick=()=>s.close();
+  const add=(t,f,cls)=>{const x=mk("button",t,"primary-btn wide"+(cls?" "+cls:""));x.onclick=f;b.insertBefore(x,$("pgX"));return x};
+  if(wire)wire(b,add);if(!s.open)s.showModal()}
+const PAGES={
+  social(){sheetPage("👥 Social Mode",'<p class="muted">Join the CampusBase community — results, notices & new content first.</p>',(b)=>{
+    [["wa","💬 WhatsApp Group","whatsapp"],["tg","✈️ Telegram Channel","telegram"],["ig","📸 Instagram","instagram"]].forEach(([c,t,k])=>{const x=mk("button",t,"wide soc-b "+c+(SOCIAL[k].on?"":" off"));x.onclick=()=>social(k);b.insertBefore(x,$("pgX"))})})},
+  leader(){sheetPage("🏆 Leaderboard",empty("🏆","Rankings start soon","Quiz rankings will appear here once quizzes go live."))},
+  cert(){sheetPage("🎖️ Certificates",empty("🎖️","No certificates yet","Your achievements will show up here."))},
+  alerts(){sheetPage("🔔 Alerts",'<div class="card notice"><b>NOTICE</b><span>Welcome to CampusBase!</span></div>'+empty("🔔","You are all caught up","New notices & results will appear here."))},
+  mail(){sheetPage("✉️ S-Mail",empty("✉️","Inbox is empty","Messages from CampusBase admins will appear here."))},
+  doubt(){sheetPage("💬 Doubt Solving",'<p class="muted">Write your doubt, then post it in the community — friends & mentors will help.</p><div class="f"><textarea id="dbt" class="search" rows="4" maxlength="600" placeholder="Type your doubt…"></textarea></div>',(b,add)=>{
+    const go2=k=>async()=>{const t=$("dbt").value.trim();if(t){try{await navigator.clipboard.writeText(t);toast("Copied — paste it in the group")}catch{}}social(k)};
+    add("Copy & open WhatsApp group",go2("whatsapp"));add("Copy & open Telegram",go2("telegram"),"ghost")})},
+  dl(){const l=dlGet();sheetPage("⬇️ Downloads",l.length?'<p class="muted">Files you opened recently on this device.</p><ul class="saved-list" id="dlList"></ul>':empty("⬇️","Nothing yet","Files you open will be listed here for quick access."),()=>{
+    const ul=$("dlList");if(!ul)return;l.forEach(x=>{const li=document.createElement("li"),a=mk("a",x.title);a.href="#";a.onclick=e=>{e.preventDefault();openFile(x)};li.append(a);ul.append(li)})})},
+  reval(){const u=me(),k=Object.keys(UNI_SITES);if(u&&UNI_SITES[u.uni])k.sort((a,b)=>(b===u.uni)-(a===u.uni));
+    sheetPage("📝 Revaluation Score",'<p class="muted">Check your result and apply for revaluation on your university\'s official site. Dates & fees are in their notices.</p>',(b,add)=>{k.forEach(n=>add("🔗 "+n+" official site",()=>open(UNI_SITES[n],"_blank","noopener"),n===k[0]&&u?"":"ghost"))})},
+  refer(){const u=me(),code=u?(u.prn&&u.prn!=="—"?u.prn:sid(u)):"",link=location.origin+location.pathname+(code?"?ref="+encodeURIComponent(code):""),msg="Join CampusBase — notes, question banks & papers for engineering students: "+link;
+    sheetPage("🎁 Refer & Earn",`<p class="muted">Share CampusBase with your friends. Referral rewards are coming soon.</p><div class="card mt" style="word-break:break-all">${esc(link)}</div>`,(b,add)=>{
+      add("📋 Copy link",async()=>{try{await navigator.clipboard.writeText(link);toast("Link copied ✓")}catch{toast("Copy failed")}});
+      add("💬 Share on WhatsApp",()=>open("https://wa.me/?text="+encodeURIComponent(msg),"_blank","noopener"),"ghost")})},
+  apk(){if(APK_URL)return sheetPage("📱 Download App",'<p class="muted">Download the APK and install it manually (allow "Install unknown apps" if asked).</p>',(b,add)=>add("⬇ Download APK",()=>open(APK_URL,"_blank","noopener")));
+    sheetPage("📱 Download App",'<p class="muted">The APK is not published yet. Meanwhile, install CampusBase like an app:</p><ol class="muted" style="margin:10px 0 0 18px;line-height:1.7"><li>Open this site in Chrome</li><li>Tap the ⋮ menu</li><li>Tap <b>Add to Home screen</b> / <b>Install app</b></li></ol>')},
+  async receipt(){if(!S.user)return needLogin();
+    sheetPage("🧾 Payment Receipt",'<div id="pgBody" class="muted">Loading…</div>');
+    const{data,error}=await supabase.from("payment_orders").select("*").eq("user_id",S.user.id).eq("status","paid");
+    const box=$("pgBody");if(!box)return;
+    if(error||!data||!data.length){box.outerHTML=empty("🧾","No receipts yet","Your Premium payments will be listed here.");return}
+    data.sort((a,b)=>String(b.created_at||"").localeCompare(String(a.created_at||"")));
+    box.innerHTML="";box.className="";const ul=mk("ul",null,"saved-list");
+    data.forEach(r=>{const li=document.createElement("li");li.append(mk("b","₹"+(r.amount_paise/100)),mk("span",(r.created_at?new Date(r.created_at).toLocaleDateString("en-IN")+" · ":"")+"Order "+r.order_id));ul.append(li)});box.append(ul)},
+  settings(){const u=me();sheetPage("⚙️ Settings","",(b,add)=>{
+    add("🌓 Switch theme",()=>$("themeBtn").click());
+    if(u){add("✎ Edit profile",()=>profile("edit"));add("🔑 Change password",()=>recover());
+      add("🗑 Clear downloads history",()=>{try{localStorage.removeItem(dlKey())}catch{}toast("Cleared ✓")},"ghost");
+      add("⎋ Logout",()=>{$("sheet").close();logout()},"ghost")}
+    else add("Login / Register",()=>{$("sheet").close();location.hash="login"})})}
+};
+
 // ---- premium / subscription ----
-async function openFile(x){const w=open("about:blank","_blank");if(w)w.opener=null;
+async function openFile(x){dlAdd(x);const w=open("about:blank","_blank");if(w)w.opener=null;
   const{data,error}=await supabase.storage.from(BUCKET).createSignedUrl(x.file_path,300);
   if(error||!data){if(w)w.close();return toast("Cannot open file: "+(error?error.message:"locked"))}
   w?w.location.replace(data.signedUrl):(location.href=data.signedUrl)}
