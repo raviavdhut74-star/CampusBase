@@ -160,7 +160,9 @@ async function doAuth(id,pw,m,form){const em=id.toLowerCase();
     const{data:ex}=await supabase.rpc("login_email",{p:prn});if(ex)return m.textContent="This PRN is already registered.";
     const{data,error}=await supabase.auth.signUp({email:mail,password:pw,options:{data:{prn,name:n,university:$("aUni").value,branch:$("aBranch").value,year:$("aYear").value},emailRedirectTo:location.href.split("#")[0]}});
     if(error)return m.textContent=/registered|already/i.test(error.message)?"This email is already registered.":"Registration failed: "+error.message;
-    form.reset();if(data.session){await load();location.hash="home";route()}else{setMode("login");ok(m,"Account created! Click the confirmation link in your email, then login.")}}
+    form.reset();
+    let ses=data.session;if(!ses){const r=await supabase.auth.signInWithPassword({email:mail,password:pw});ses=r.error?null:r.data.session}  // email confirmation OFF / auto-confirmed -> log in right away
+    if(ses){await load();location.hash="home";route()}else{setMode("login");ok(m,"Account created! Click the confirmation link in your email, then login.")}}
   else if(mode==="master"){const{error}=await supabase.auth.signInWithPassword({email:em,password:pw});if(error)return m.textContent="Wrong admin email or password.";
     await load();if(!S.admin){await supabase.auth.signOut();await load();return m.textContent="This account is not an admin."}
     form.reset();location.hash="admin";route()}
