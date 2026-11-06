@@ -1,6 +1,10 @@
 // CampusBase v2 portal — uses the SAME Supabase backend/files as the rest of the project (supabase.js, setup.sql).
 import { supabase, BUCKET, CATALOG, isAdmin } from "./supabase.js";
 
+// PREMIUM master switch. false = every file is open for every logged-in student, no Premium/paywall UI.
+// When you want Premium: set true (and run subscription_setup.sql — see README_APP.md).
+const PREMIUM_ON=false;
+
 // Social links are OFF for now. Set on:true and a url to enable later.
 const SOCIAL={instagram:{on:true,url:"https://www.instagram.com/campus_base"},whatsapp:{on:true,url:"https://chat.whatsapp.com/ICt2INQ4g2JEKB8urgboBd"},telegram:{on:true,url:"https://t.me/campusbase_study_material"}};
 const C={unis:["SPPU","BATU","SGBBU","AKTU"],branches:[...new Set(["AI & ML",...CATALOG.branches])],years:CATALOG.years,
@@ -35,7 +39,7 @@ const MENU=[["⭐","Premium","premium"],["👥","Social Mode","pg:social"],["�
 function drawer(){const u=me();
   $("dUser").innerHTML=avatar(u)+`<div><b>${esc(u?u.name:"Guest")}</b><div class="muted">${esc(u?u.branch:"Please login")}</div></div>`;
   const l=$("dList");l.innerHTML="";
-  (u&&u.admin?[["📤","Upload Files","admin"],...MENU]:MENU).forEach(([i,t,a])=>{const li=document.createElement("li"),b=mk("button",null,(a==="soon"||(a.startsWith("s:")&&!SOCIAL[a.slice(2)].on))?"off":"");b.innerHTML=`<span style="width:22px;text-align:center">${i}</span>${esc(t)}`;b.onclick=()=>{go(a);setDrawer(false)};li.append(b);l.append(li)});
+  (u&&u.admin?[["📤","Upload Files","admin"],...MENU]:MENU).filter(m=>PREMIUM_ON||m[2]!=="premium").forEach(([i,t,a])=>{const li=document.createElement("li"),b=mk("button",null,(a==="soon"||(a.startsWith("s:")&&!SOCIAL[a.slice(2)].on))?"off":"");b.innerHTML=`<span style="width:22px;text-align:center">${i}</span>${esc(t)}`;b.onclick=()=>{go(a);setDrawer(false)};li.append(b);l.append(li)});
   const li=document.createElement("li"),b=mk("button",u?"⎋  Logout":"⎋  Login / Register","lo");b.onclick=()=>{setDrawer(false);u?logout():(location.hash="login")};li.append(b);l.append(li)}
 const setDrawer=o=>{$("drawer").classList.toggle("on",o);$("scrim").classList.toggle("on",o)};
 $("burger").onclick=()=>{drawer();setDrawer(true)};$("scrim").onclick=()=>setDrawer(false);
@@ -92,10 +96,10 @@ function renderRes(){const l=$("resList");l.replaceChildren();
   let rows=subjCache.filter(x=>subSel===ALLSUB||subOf(x)===subSel);
   if(!rows.length)return l.append(mk("li","Nothing uploaded here yet.","none"));
   if(subSel===ALLSUB)rows=rows.map((x,i)=>[x,i]).sort((a,b)=>subOf(a[0]).localeCompare(subOf(b[0]))||a[1]-b[1]).map(r=>r[0]);
-  const can=!!S.user&&(S.admin||!!S.sub);let last=null;
+  const can=!!S.user&&(!PREMIUM_ON||S.admin||!!S.sub);let last=null;
   const single=!!(SEM&&SEM.length===1);
   rows.forEach(x=>{if(subSel===ALLSUB&&!single&&subOf(x)!==last){last=subOf(x);l.append(mk("li","📘 "+last,"grp"))}
-    const li=document.createElement("li"),a=mk("a",(x.is_free?"🆓 ":can?"":"🔒 ")+x.title);a.href="#";
+    const li=document.createElement("li"),a=mk("a",(PREMIUM_ON&&x.is_free?"🆓 ":can?"":"🔒 ")+x.title);a.href="#";
     a.onclick=e=>{e.preventDefault();if(!S.user){$("modal").close();toast("Please login first");location.hash="login";return}if(can||x.is_free)openFile(x);else paywall()};
     li.append(a);if(tab===ALLSUB)li.append(mk("span",x.type,"chip"));if(x.semester)li.append(mk("span","Sem "+ROMAN[x.semester],"chip"));l.append(li)})}
 function fillSem(){if(!$("fSem"))return;const s=SEMS[$("fYear").value]||[];$("fSem").innerHTML='<option value="">All semesters</option>'+s.map(n=>`<option value="${n}">Semester ${ROMAN[n]}</option>`).join("")}
@@ -124,9 +128,9 @@ function profile(mode){const u=me();if(!u){toast("Please login first");location.
     $("pf").onsubmit=async e=>{e.preventDefault();let p;if(br)p={branch:$("pBranch").value};else{const n=$("pName").value.trim();if(!n)return toast("Name required");p={name:n,university:$("pUni").value,year:$("pYear").value}}
       if(await saveProf(p)){toast("Saved ✓");if(br){$("sheet").close();goBranch()}else profile()}}}
   else{b.innerHTML=`<div style="text-align:center"><div class="pav">${avatar(u)}<label title="Change photo">📷<input type="file" id="pPhoto" accept="image/*" hidden></label></div><p class="muted">Tap the camera icon to update your photo.</p>
-    <h2>${esc(u.name)}</h2><p class="muted">${esc(u.email)}</p><p class="muted">${u.admin?"":u.sub?"⭐ Premium till "+esc(new Date(u.sub).toLocaleDateString("en-IN")):"Free plan"}</p>${u.admin?'<p class="mt"><span class="chip">ADMIN</span></p>':`<p class="mt"><span class="chip">${esc((YL[u.year]||"").toUpperCase())}</span> <span class="chip">${esc(u.branch.toUpperCase())}</span></p>`}</div>
+    <h2>${esc(u.name)}</h2><p class="muted">${esc(u.email)}</p><p class="muted">${u.admin||!PREMIUM_ON?"":u.sub?"⭐ Premium till "+esc(new Date(u.sub).toLocaleDateString("en-IN")):"Free plan"}</p>${u.admin?'<p class="mt"><span class="chip">ADMIN</span></p>':`<p class="mt"><span class="chip">${esc((YL[u.year]||"").toUpperCase())}</span> <span class="chip">${esc(u.branch.toUpperCase())}</span></p>`}</div>
     <div class="pg"><div><small>Public S ID</small><b>${esc(sid(u))}</b></div><div><small>PRN</small><b>${esc(u.prn)}</b></div><div><small>Year</small><b>${esc(YL[u.year])}</b></div><div><small>Branch</small><b>${esc(u.branch)}</b></div><div><small>University</small><b>${esc(u.uni)}</b></div><div><small>Academic Year</small><b>2025–26</b></div></div>
-    ${u.admin?"":`<button class="primary-btn wide" id="pSub">⭐ ${u.sub?"Extend":"Get"} Premium</button>`}<button class="primary-btn wide" id="pEdit">✎ Edit Profile</button><button class="primary-btn wide" id="pBr">⇄ Change Branch</button><button class="primary-btn wide ghost" id="pClose">Close</button>`;
+    ${u.admin||!PREMIUM_ON?"":`<button class="primary-btn wide" id="pSub">⭐ ${u.sub?"Extend":"Get"} Premium</button>`}<button class="primary-btn wide" id="pEdit">✎ Edit Profile</button><button class="primary-btn wide" id="pBr">⇄ Change Branch</button><button class="primary-btn wide ghost" id="pClose">Close</button>`;
     $("pEdit").onclick=()=>profile("edit");if($("pSub"))$("pSub").onclick=()=>{$("sheet").close();paywall()};$("pBr").onclick=()=>profile("branch");$("pClose").onclick=()=>s.close();
     $("pPhoto").onchange=e=>{const f=e.target.files[0];if(!f)return;const img=new Image();img.onload=async()=>{const c=document.createElement("canvas");c.width=c.height=160;const m=Math.min(img.width,img.height);c.getContext("2d").drawImage(img,(img.width-m)/2,(img.height-m)/2,m,m,0,0,160,160);if(await saveProf({photo:c.toDataURL("image/jpeg",.8)}))profile()};img.src=URL.createObjectURL(f)}}
   if(!s.open)s.showModal()}
@@ -213,12 +217,13 @@ const drop=$("drop");drop.onclick=()=>$("uFile").click();drop.onkeydown=e=>{if(e
 ["dragleave","drop"].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.remove("over")}));
 drop.addEventListener("drop",e=>addFiles(e.dataTransfer.files));$("uFile").onchange=e=>{addFiles(e.target.files);e.target.value=""};
 
+if(!PREMIUM_ON){const fr=$("uFree").closest("label");if(fr)fr.style.display="none";if($("gForm"))$("gForm").style.display="none"}
 $("upForm").onsubmit=async e=>{e.preventDefault();if(!S.admin)return toast("Admins only");
   const subject=$("uSubject").value;if(!subject)return toast("Select a subject first");
   const todo=Q.filter(q=>q.state==="ready"||q.state==="error");if(!todo.length)return toast("Add at least one file");
   if(todo.some(q=>!q.title.trim()))return toast("Every file needs a title");
   const btn=$("upGo");btn.disabled=true;let ok=0;const warn=new Set();
-  const meta={university:$("uUni").value,branch:$("uBranch").value,year:$("uYear").value,type:$("uType").value,subject,semester:+$("uSem").value||null,is_free:$("uFree").checked};
+  const meta={university:$("uUni").value,branch:$("uBranch").value,year:$("uYear").value,type:$("uType").value,subject,semester:+$("uSem").value||null,is_free:$("uFree").checked||!PREMIUM_ON};
   for(let i=0;i<todo.length;i++){const q=todo[i],f=q.file;q.state="up";btn.textContent=`Uploading ${i+1}/${todo.length}…`;renderQ();
     const path=`${crypto.randomUUID()}-${f.name.replace(/[^a-zA-Z0-9._-]/g,"_")}`;
     const{error:ue}=await supabase.storage.from(BUCKET).upload(path,f,{contentType:f.type||"application/octet-stream"});
@@ -290,6 +295,7 @@ async function branchPage(){const u0=me();if(!u0)return;
 if($("bBranch")){$("bBranch").onchange=()=>{BR.branch=$("bBranch").value;BR.sem="";branchPage()};$("bYear").onchange=()=>{BR.year=$("bYear").value;BR.sem="";branchPage()};$("bSem").onchange=()=>{BR.sem=$("bSem").value;branchPage()}}
 
 // ---- info pages: every menu item / card / bottom-nav tab opens a real screen ----
+let deferredInstall=null;addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredInstall=e});addEventListener("appinstalled",()=>{deferredInstall=null;toast("App installed ✓")});
 const APK_URL=""; // paste your APK download link here when ready
 const UNI_SITES={SPPU:"https://www.unipune.ac.in",BATU:"https://dbatu.ac.in",SGBBU:"https://www.sgbau.ac.in",AKTU:"https://aktu.ac.in"};
 const dlKey=()=>"cb2_dl_"+(S.user?S.user.id:"guest");
@@ -320,7 +326,8 @@ const PAGES={
     sheetPage("🎁 Refer & Earn",`<p class="muted">Share CampusBase with your friends. Referral rewards are coming soon.</p><div class="card mt" style="word-break:break-all">${esc(link)}</div>`,(b,add)=>{
       add("📋 Copy link",async()=>{try{await navigator.clipboard.writeText(link);toast("Link copied ✓")}catch{toast("Copy failed")}});
       add("💬 Share on WhatsApp",()=>open("https://wa.me/?text="+encodeURIComponent(msg),"_blank","noopener"),"ghost")})},
-  apk(){if(APK_URL)return sheetPage("📱 Download App",'<p class="muted">Download the APK and install it manually (allow "Install unknown apps" if asked).</p>',(b,add)=>add("⬇ Download APK",()=>open(APK_URL,"_blank","noopener")));
+  apk(){if(deferredInstall)return sheetPage("📱 Install CampusBase",'<p class="muted">Install CampusBase on your phone like a normal app — opens full screen, no browser bar.</p>',(b,add)=>add("⬇ Install App",async()=>{deferredInstall.prompt();await deferredInstall.userChoice;deferredInstall=null;$("sheet").close()}));
+    if(APK_URL)return sheetPage("📱 Download App",'<p class="muted">Download the APK and install it manually (allow "Install unknown apps" if asked).</p>',(b,add)=>add("⬇ Download APK",()=>open(APK_URL,"_blank","noopener")));
     sheetPage("📱 Download App",'<p class="muted">The APK is not published yet. Meanwhile, install CampusBase like an app:</p><ol class="muted" style="margin:10px 0 0 18px;line-height:1.7"><li>Open this site in Chrome</li><li>Tap the ⋮ menu</li><li>Tap <b>Add to Home screen</b> / <b>Install app</b></li></ol>')},
   async receipt(){if(!S.user)return needLogin();
     sheetPage("🧾 Payment Receipt",'<div id="pgBody" class="muted">Loading…</div>');
@@ -339,11 +346,13 @@ const PAGES={
 };
 
 // ---- premium / subscription ----
-async function openFile(x){dlAdd(x);const w=open("about:blank","_blank");if(w)w.opener=null;
-  const{data,error}=await supabase.storage.from(BUCKET).createSignedUrl(x.file_path,300);
-  if(error||!data){if(x.file_url){w?w.location.replace(x.file_url):(location.href=x.file_url);return}if(w)w.close();return toast("Cannot open file: "+(error?error.message:"locked"))}
-  w?w.location.replace(data.signedUrl):(location.href=data.signedUrl)}
-async function paywall(){if(!S.user){toast("Please login first");location.hash="login";return}
+async function openFile(x){dlAdd(x);toast("Opening…");
+  let url=null;
+  const{data,error}=await supabase.storage.from(BUCKET).createSignedUrl(x.file_path,600);
+  if(!error&&data)url=data.signedUrl;else if(x.file_url)url=x.file_url;      // bucket public -> plain link also works
+  if(!url)return toast("Cannot open file: "+(error?error.message:"not available")+" — admin: run open_files.sql");
+  const w=open(url,"_blank","noopener");if(!w)location.href=url}      // popup blocked / installed app -> open in same tab
+async function paywall(){if(!PREMIUM_ON)return soon();if(!S.user){toast("Please login first");location.hash="login";return}
   if($("modal").open)$("modal").close();
   const s=$("sheet"),b=$("sheetBody");b.innerHTML='<h3>⭐ CampusBase Premium</h3><p class="muted">Loading plans…</p>';if(!s.open)s.showModal();
   const{data,error}=await supabase.from("plans").select("*").eq("active",true).order("price_paise");
@@ -377,3 +386,6 @@ function recover(){const b=$("sheetBody");b.innerHTML='<form id="rf" class="f"><
 supabase.auth.onAuthStateChange(ev=>{if(ev==="SIGNED_OUT")setTimeout(async()=>{await load();route()},0);if(ev==="PASSWORD_RECOVERY")setTimeout(async()=>{await load();route();recover()},0)});
 load().then(()=>{route();const oid=new URLSearchParams(location.search).get("order_id");
   if(oid){history.replaceState(null,"",location.pathname+location.hash);if(S.user)settleOrder(oid)}});
+
+// ---- installable app (PWA): offline shell + home-screen install ----
+if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
