@@ -5,6 +5,7 @@ import { supabase, BUCKET, CATALOG, isAdmin } from "./supabase.js";
 const SOCIAL={instagram:{on:true,url:"https://www.instagram.com/campus_base"},whatsapp:{on:true,url:"https://chat.whatsapp.com/ICt2INQ4g2JEKB8urgboBd"},telegram:{on:true,url:"https://t.me/campusbase_study_material"}};
 const C={unis:["SPPU","BATU","SGBBU","AKTU"],branches:[...new Set(["AI & ML",...CATALOG.branches])],years:CATALOG.years,
   types:[...new Set(["Notes","Handwritten Notes","Question Bank","Answer Bank","Formula Notes","Previous Year Papers","Books","MCQ",...CATALOG.types])]};
+const UA={BATU:["BATU","DBATU"],SPPU:["SPPU","SPPU (Pune)"],SGBBU:["SGBBU","SGBAU"]},ua=x=>UA[x]||[x];
 const YL={FE:"First Year",SE:"Second Year",TE:"Third Year",BE:"Final Year"};
 const $=id=>document.getElementById(id);
 const toast=t=>{const e=$("toast");e.textContent=t;e.classList.add("show");setTimeout(()=>e.classList.remove("show"),2600)};
@@ -93,19 +94,19 @@ function renderRes(){const l=$("resList");l.replaceChildren();
     const li=document.createElement("li"),a=mk("a",(x.is_free?"🆓 ":can?"":"🔒 ")+x.title);a.href="#";
     a.onclick=e=>{e.preventDefault();if(!S.user){$("modal").close();toast("Please login first");location.hash="login";return}if(can||x.is_free)openFile(x);else paywall()};
     li.append(a);if(tab===ALLSUB)li.append(mk("span",x.type,"chip"));if(x.semester)li.append(mk("span","Sem "+ROMAN[x.semester],"chip"));l.append(li)})}
-function fillSem(){const s=SEMS[$("fYear").value]||[];$("fSem").innerHTML='<option value="">All semesters</option>'+s.map(n=>`<option value="${n}">Semester ${ROMAN[n]}</option>`).join("")}
+function fillSem(){if(!$("fSem"))return;const s=SEMS[$("fYear").value]||[];$("fSem").innerHTML='<option value="">All semesters</option>'+s.map(n=>`<option value="${n}">Semester ${ROMAN[n]}</option>`).join("")}
 async function show(){const t=$("tabs");t.replaceChildren();[ALLSUB,...C.types].forEach(x=>{const b=mk("button",x===ALLSUB?"All":x);b.setAttribute("aria-selected",x===tab);b.onclick=()=>{tab=x;show()};t.append(b)});
   const l=$("resList");l.replaceChildren(mk("li","Loading…","none"));
-  const U=$("fUni").value,B=$("fBranch").value,Y=$("fYear").value,SM=$("fSem").value;
+  const U=$("fUni").value,B=$("fBranch").value,Y=$("fYear").value,SM=$("fSem")?$("fSem").value:"";
   // ONLY the selected university + branch + year (+ semester / subject) — nothing from other branches
-  let rq=supabase.from("resources").select("*").eq("university",U).eq("branch",B).eq("year",Y);
-  if(tab!==ALLSUB)rq=rq.eq("type",tab);if(SM)rq=rq.eq("semester",+SM);if(SEM)rq=rq.in("subject",SEM);
-  const[r,s]=await Promise.all([rq.order("created_at",{ascending:false}),supabase.from("subjects").select("name,semester").eq("university",U).eq("branch",B).eq("year",Y)]);
+  let rq=supabase.from("resources").select("*").in("university",ua(U)).eq("branch",B).eq("year",Y);
+  if(tab!==ALLSUB)rq=rq.eq("type",tab);if(SM)rq=rq.eq("semester",+SM);
+  const[r,s]=await Promise.all([rq.order("created_at",{ascending:false}),supabase.from("subjects").select("name,semester").in("university",ua(U)).eq("branch",B).eq("year",Y)]);
   if(r.error){l.replaceChildren(mk("li",r.error.message,"none"));return}
   subjCache=r.data;subjNames=(s.data||[]).filter(x=>!SM||!x.semester||x.semester===+SM).map(x=>x.name);
   if(SEM){const set=new Set(SEM);subjCache=subjCache.filter(x=>set.has(subOf(x)));subjNames=SEM}
   renderSubj();renderRes()}
-["fUni","fBranch","fYear"].forEach(i=>$(i).onchange=()=>{SEM=null;subSel=ALLSUB;$("mTitle").textContent="Study material";if(i==="fYear")fillSem();show()});$("fSem").onchange=()=>{subSel=ALLSUB;show()};$("mClose").onclick=()=>$("modal").close();
+["fUni","fBranch","fYear"].forEach(i=>$(i).onchange=()=>{SEM=null;subSel=ALLSUB;$("mTitle").textContent="Study material";if(i==="fYear")fillSem();show()});if($("fSem"))$("fSem").onchange=()=>{subSel=ALLSUB;show()};$("mClose").onclick=()=>$("modal").close();
 
 // profile sheet
 async function saveProf(patch){const{error}=await supabase.from("profiles").update(patch).eq("id",S.user.id);if(error)return toast(error.message),false;await load();home();return true}
@@ -184,7 +185,7 @@ function subjOptsUp(keep){const sem=+$("uSem").value,names=SUBJ_ALL.filter(r=>!r
   const m=keep&&names.find(n=>n.toLowerCase()===keep.toLowerCase());if(m)$("uSubject").value=m}
 async function loadSubj(keep){semOpts();const{data,error}=await supabase.from("subjects").select("name,semester").eq("university",$("uUni").value).eq("branch",$("uBranch").value).eq("year",$("uYear").value).order("name");
   if(error)toast("Subjects: "+error.message+" (run subject_setup.sql)");SUBJ_ALL=data||[];subjOptsUp(keep)}
-["uUni","uBranch","uYear"].forEach(i=>$(i).addEventListener("change",()=>loadSubj()));$("uSem").addEventListener("change",()=>subjOptsUp($("uSubject").value));
+["uUni","uBranch","uYear"].forEach(i=>$(i).addEventListener("change",()=>loadSubj()));if($("uSem"))$("uSem").addEventListener("change",()=>subjOptsUp($("uSubject").value));
 $("addSubj").onclick=()=>{const r=$("newSubRow");r.hidden=!r.hidden;if(!r.hidden)$("newSub").focus()};
 $("newSub").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();$("saveSub").click()}};
 $("saveSub").onclick=async()=>{if(!S.admin)return toast("Admins only");const n=$("newSub").value.trim().replace(/\s+/g," ");if(!n)return toast("Enter a subject name");
@@ -255,9 +256,10 @@ async function branchPage(){const u=me();if(!u)return;const full=BR_FULL[u.branc
   $("brSub").textContent=`${ys} ${full} — Notes, PYQ, Question Bank & Answer Bank`;
   const g=$("brGrid");g.replaceChildren(mk("div","Loading…","muted"));
   const[sj,rs]=await Promise.all([
-    supabase.from("subjects").select("name,semester").eq("university",u.uni).eq("branch",u.branch).eq("year",u.year).order("name"),
-    supabase.from("resources").select("subject").eq("university",u.uni).eq("branch",u.branch).eq("year",u.year)]);
-  const cnt={};(rs.data||[]).forEach(r=>{const k=(r.subject||"").trim()||"General";cnt[k]=(cnt[k]||0)+1});
+    supabase.from("subjects").select("name,semester").in("university",ua(u.uni)).eq("branch",u.branch).eq("year",u.year).order("name"),
+    supabase.from("resources").select("subject,type").in("university",ua(u.uni)).eq("branch",u.branch).eq("year",u.year)]);
+  const cnt={},tc={};(rs.data||[]).forEach(r=>{const k=(r.subject||"").trim()||"General";cnt[k]=(cnt[k]||0)+1;tc[r.type]=(tc[r.type]||0)+1});
+  const nAll=(rs.data||[]).length;$("brSub").textContent=`${ys} ${full} — ${nAll} file${nAll===1?"":"s"} available`;
   const by={},known=new Set();(sj.data||[]).forEach(r=>{known.add(r.name);const k=r.semester||0;(by[k]=by[k]||[]).push(r.name)});
   const extra=Object.keys(cnt).filter(n=>!known.has(n)).sort();if(extra.length)by[99]=extra;   // files whose subject is not in the list still show up
   const el=[];
@@ -266,8 +268,9 @@ async function branchPage(){const u=me();if(!u)return;const full=BR_FULL[u.branc
     el.push(mk("h3",k===99?"Other material":k?"Semester "+ROMAN[k]+" — Subjects":"Subjects","sec"));
     by[k].forEach(n=>el.push(box("📘",n,cnt[n]?cnt[n]+" file"+(cnt[n]>1?"s":"")+" uploaded":"No files yet",()=>browse(ALLSUB,[n],n),!cnt[n])))});
   el.push(mk("h3","Resources","sec"));
-  [["🗄️","Question Bank","Exam-focused question bank — subject-wise","Question Bank"],["⭐","Answer Bank","Solved answers — exam-focused answer bank","Answer Bank"],["📄","Previous Year Papers","Previous year question papers — subject-wise","Previous Year Papers"]]
-    .forEach(([ic,t,d,ty])=>el.push(box(ic,t,d,()=>browse(ty))));
+  const TI={"Notes":"📗","Question Bank":"🗄️","Answer Bank":"⭐","Previous Year Papers":"📄","Handwritten Notes":"✍️","Books":"📕","MCQ":"☑️","Formula Notes":"√x","Syllabus":"📋","Question Papers":"📄","Important Questions":"❗"};
+  const types=[...new Set(["Notes","Question Bank","Answer Bank","Previous Year Papers",...C.types.filter(t=>tc[t]),...Object.keys(tc)])];   // every type that has files is reachable
+  types.forEach(t=>el.push(box(TI[t]||"📁",t,tc[t]?tc[t]+" file"+(tc[t]>1?"s":""):"No files yet",()=>browse(t),!tc[t])));
   g.replaceChildren(...el)}
 
 // ---- info pages: every menu item / card / bottom-nav tab opens a real screen ----
@@ -322,7 +325,7 @@ const PAGES={
 // ---- premium / subscription ----
 async function openFile(x){dlAdd(x);const w=open("about:blank","_blank");if(w)w.opener=null;
   const{data,error}=await supabase.storage.from(BUCKET).createSignedUrl(x.file_path,300);
-  if(error||!data){if(w)w.close();return toast("Cannot open file: "+(error?error.message:"locked"))}
+  if(error||!data){if(x.file_url){w?w.location.replace(x.file_url):(location.href=x.file_url);return}if(w)w.close();return toast("Cannot open file: "+(error?error.message:"locked"))}
   w?w.location.replace(data.signedUrl):(location.href=data.signedUrl)}
 async function paywall(){if(!S.user){toast("Please login first");location.hash="login";return}
   if($("modal").open)$("modal").close();
