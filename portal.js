@@ -73,7 +73,11 @@ document.querySelectorAll(".bnav button").forEach(b=>b.onclick=()=>{const n=b.da
 
 // browse files
 let tab=C.types[0];fill("fUni",C.unis);fill("fBranch",C.branches);fill("fYear",C.years,YL);
-function browse(t,sem,title){const u=me();tab=t;SEM=sem||null;subSel=ALLSUB;$("mTitle").textContent=title||"Study material";if(u&&(!u.admin||sem)){$("fUni").value=u.uni;$("fBranch").value=u.branch;$("fYear").value=u.year}fillSem();if(!$("modal").open)$("modal").showModal();show()}
+function browse(t,sem,title,ov){const u0=me(),u=u0&&ov?{...u0,...ov}:u0;tab=t;SEM=sem||null;subSel=ALLSUB;$("mTitle").textContent=title||"Study material";
+  if(u&&(!u.admin||sem||ov)){$("fUni").value=u.uni;$("fBranch").value=u.branch;$("fYear").value=u.year}
+  $("fUni").disabled=!!(u0&&!u0.admin);   // students only ever see their own university's files
+  fillSem();if(ov&&ov.sem&&$("fSem"))$("fSem").value=String(ov.sem);
+  if(!$("modal").open)$("modal").showModal();show()}
 const ALLSUB="__all__";
 let subjCache=[],subjNames=[],subSel=ALLSUB,SEM=null;
 const subOf=x=>(x.subject||"").trim()||"General";
@@ -213,18 +217,20 @@ $("upForm").onsubmit=async e=>{e.preventDefault();if(!S.admin)return toast("Admi
   const subject=$("uSubject").value;if(!subject)return toast("Select a subject first");
   const todo=Q.filter(q=>q.state==="ready"||q.state==="error");if(!todo.length)return toast("Add at least one file");
   if(todo.some(q=>!q.title.trim()))return toast("Every file needs a title");
-  const btn=$("upGo");btn.disabled=true;let ok=0;
+  const btn=$("upGo");btn.disabled=true;let ok=0;const warn=new Set();
   const meta={university:$("uUni").value,branch:$("uBranch").value,year:$("uYear").value,type:$("uType").value,subject,semester:+$("uSem").value||null,is_free:$("uFree").checked};
   for(let i=0;i<todo.length;i++){const q=todo[i],f=q.file;q.state="up";btn.textContent=`Uploading ${i+1}/${todo.length}…`;renderQ();
     const path=`${crypto.randomUUID()}-${f.name.replace(/[^a-zA-Z0-9._-]/g,"_")}`;
     const{error:ue}=await supabase.storage.from(BUCKET).upload(path,f,{contentType:f.type||"application/octet-stream"});
     if(ue){q.state="error";q.err=ue.message;continue}
     const{data:pub}=supabase.storage.from(BUCKET).getPublicUrl(path);
-    const{error}=await supabase.from("resources").insert({...meta,title:q.title.trim(),file_path:path,file_url:pub.publicUrl});
+    let row={...meta,title:q.title.trim(),file_path:path,file_url:pub.publicUrl},{error}=await supabase.from("resources").insert(row);
+    for(let n=0;error&&n<3;n++){const m=/'(\w+)' column|column "(\w+)"/.exec(error.message||"");const col=m&&(m[1]||m[2]);if(!col||!(col in row)||["university","branch","year","type","title","file_path","file_url"].includes(col))break;
+      delete row[col];warn.add(col);({error}=await supabase.from("resources").insert(row))}
     if(error){await supabase.storage.from(BUCKET).remove([path]);q.state="error";q.err=error.message;continue}
     q.state="done";ok++}
   Q=Q.filter(q=>q.state!=="done");renderQ();btn.disabled=false;btn.textContent="Upload";
-  toast(ok?`${ok} file(s) uploaded ✓`+(Q.length?` · ${Q.length} failed`:""):"Upload failed");if(ok)list()};
+  toast(ok?`${ok} file(s) uploaded ✓`+(Q.length?` · ${Q.length} failed`:"")+(warn.size?` · ⚠ run fix_all.sql (missing: ${[...warn].join(", ")})`:""):"Upload failed — "+((Q.find(q=>q.err)||{}).err||"see list"));if(ok)list()};
 
 // uploaded files: search + subject filter + delete
 let UP=[];
@@ -238,7 +244,10 @@ function renderUp(){const l=$("upList"),q=$("upSearch").value.trim().toLowerCase
 async function list(){const l=$("upList");l.replaceChildren(mk("li","Loading…","none"));
   const{data,error}=await supabase.from("resources").select("*").order("created_at",{ascending:false});
   if(error)return l.replaceChildren(mk("li",error.message,"none"));
-  UP=data;const keep=$("upFilt").value,subs=[...new Set(UP.map(x=>x.subject||"General"))].sort((a,b)=>a.localeCompare(b));
+  UP=data;
+  const grp={};UP.forEach(x=>{const k=`${x.university} · ${x.branch} · ${x.year}${x.semester?" · Sem "+ROMAN[x.semester]:""}`;grp[k]=(grp[k]||0)+1});
+  if($("upSummary"))$("upSummary").replaceChildren(mk("b","Stored under:"),...Object.entries(grp).sort().map(([k,v])=>mk("span",`${k} (${v})`,"chip")));
+  const keep=$("upFilt").value,subs=[...new Set(UP.map(x=>x.subject||"General"))].sort((a,b)=>a.localeCompare(b));
   $("upFilt").innerHTML=`<option value="${ALLSUB}">All subjects (${UP.length})</option>`+opts(subs,subs.includes(keep)?keep:null);renderUp()}
 $("upSearch").oninput=renderUp;$("upFilt").onchange=renderUp;
 
@@ -249,29 +258,36 @@ $("upSearch").oninput=renderUp;$("upFilt").onchange=renderUp;
 const BR_FULL={"AI & ML":"Artificial Intelligence & Machine Learning","AI & DS":"Artificial Intelligence & Data Science",Computer:"Computer Engineering",IT:"Information Technology",Mechanical:"Mechanical Engineering",Civil:"Civil Engineering",Electrical:"Electrical Engineering","E&TC":"Electronics & Telecommunication",Chemical:"Chemical Engineering"};
 const BR_ICON={"AI & ML":"🤖","AI & DS":"📊",Computer:"💻",IT:"🌐",Mechanical:"⚙️",Civil:"🏗️",Electrical:"⚡","E&TC":"📡",Chemical:"🧪"};
 const YS={FE:"FY",SE:"SY",TE:"TY",BE:"Final Year"},ROMAN=["","I","II","III","IV","V","VI","VII","VIII"],SEMS={FE:[1,2],SE:[3,4],TE:[5,6],BE:[7,8]};
-const goBranch=()=>{if(location.hash==="#branch")route();else location.hash="branch"};
+let BR=null;   // branch/year/semester the student chose on the branch page (university = the student's own)
+const goBranch=()=>{BR=null;if(location.hash==="#branch")route();else location.hash="branch"};
 const brief=a=>a.slice(0,5).join(", ")+(a.length>5?" & more":"");
-async function branchPage(){const u=me();if(!u)return;const full=BR_FULL[u.branch]||u.branch,ys=YS[u.year]||u.year;
+async function branchPage(){const u0=me();if(!u0)return;
+  BR=BR||{branch:u0.branch,year:u0.year,sem:""};const u={...u0,branch:BR.branch,year:BR.year};
+  const full=BR_FULL[u.branch]||u.branch,ys=YS[u.year]||u.year;
+  if($("bBranch")){$("bBranch").innerHTML=opts(C.branches,u.branch);$("bYear").innerHTML=opts(C.years,u.year,YL);
+    $("bSem").innerHTML='<option value="">All semesters</option>'+(SEMS[u.year]||[]).map(n=>`<option value="${n}"${String(n)===String(BR.sem)?" selected":""}>Semester ${ROMAN[n]}</option>`).join("")}
   $("brHead").innerHTML=`<span class="av" style="border-radius:14px">${BR_ICON[u.branch]||"🎓"}</span><div><b>${esc(full)}</b><div class="muted">${esc(u.uni)} | ${esc(YL[u.year]||u.year)} 2025–26</div><span class="chip">${esc(ys.toUpperCase())} ENGINEERING</span></div>`;
-  $("brSub").textContent=`${ys} ${full} — Notes, PYQ, Question Bank & Answer Bank`;
   const g=$("brGrid");g.replaceChildren(mk("div","Loading…","muted"));
   const[sj,rs]=await Promise.all([
     supabase.from("subjects").select("name,semester").in("university",ua(u.uni)).eq("branch",u.branch).eq("year",u.year).order("name"),
-    supabase.from("resources").select("subject,type").in("university",ua(u.uni)).eq("branch",u.branch).eq("year",u.year)]);
-  const cnt={},tc={};(rs.data||[]).forEach(r=>{const k=(r.subject||"").trim()||"General";cnt[k]=(cnt[k]||0)+1;tc[r.type]=(tc[r.type]||0)+1});
-  const nAll=(rs.data||[]).length;$("brSub").textContent=`${ys} ${full} — ${nAll} file${nAll===1?"":"s"} available`;
-  const by={},known=new Set();(sj.data||[]).forEach(r=>{known.add(r.name);const k=r.semester||0;(by[k]=by[k]||[]).push(r.name)});
+    supabase.from("resources").select("subject,type,semester").in("university",ua(u.uni)).eq("branch",u.branch).eq("year",u.year)]);
+  const err=rs.error||sj.error;if(err){toast("Could not load: "+err.message);g.replaceChildren(mk("div","⚠ "+err.message+" — run fix_all.sql in Supabase","card muted"));return}
+  const sem=+BR.sem||0,rows=(rs.data||[]).filter(r=>!sem||!r.semester||r.semester===sem);
+  const cnt={},tc={};rows.forEach(r=>{const k=(r.subject||"").trim()||"General";cnt[k]=(cnt[k]||0)+1;tc[r.type]=(tc[r.type]||0)+1});
+  $("brSub").textContent=`${ys} ${full}${sem?" · Semester "+ROMAN[sem]:""} — ${rows.length} file${rows.length===1?"":"s"} available`;
+  const by={},known=new Set();(sj.data||[]).forEach(r=>{known.add(r.name);const k=r.semester||0;if(!sem||!k||k===sem)(by[k]=by[k]||[]).push(r.name)});
   const extra=Object.keys(cnt).filter(n=>!known.has(n)).sort();if(extra.length)by[99]=extra;   // files whose subject is not in the list still show up
-  const el=[];
+  const ov={branch:u.branch,year:u.year},el=[];
   const box=(ic,t,d,go,zero)=>{const c=mk("div",null,"card dc br-card"+(zero?" zero":""));c.innerHTML=`<span class="ic">${ic}</span><b>${esc(t)}</b><span class="muted">${esc(d)}</span>`;const bt=mk("button","Open →","uni-btn");bt.onclick=go;c.append(bt);return c};
   Object.keys(by).map(Number).sort((x,y)=>x-y).forEach(k=>{
     el.push(mk("h3",k===99?"Other material":k?"Semester "+ROMAN[k]+" — Subjects":"Subjects","sec"));
-    by[k].forEach(n=>el.push(box("📘",n,cnt[n]?cnt[n]+" file"+(cnt[n]>1?"s":"")+" uploaded":"No files yet",()=>browse(ALLSUB,[n],n),!cnt[n])))});
+    by[k].forEach(n=>el.push(box("📘",n,cnt[n]?cnt[n]+" file"+(cnt[n]>1?"s":"")+" uploaded":"No files yet",()=>browse(ALLSUB,[n],n,ov),!cnt[n])))});
   el.push(mk("h3","Resources","sec"));
   const TI={"Notes":"📗","Question Bank":"🗄️","Answer Bank":"⭐","Previous Year Papers":"📄","Handwritten Notes":"✍️","Books":"📕","MCQ":"☑️","Formula Notes":"√x","Syllabus":"📋","Question Papers":"📄","Important Questions":"❗"};
   const types=[...new Set(["Notes","Question Bank","Answer Bank","Previous Year Papers",...C.types.filter(t=>tc[t]),...Object.keys(tc)])];   // every type that has files is reachable
-  types.forEach(t=>el.push(box(TI[t]||"📁",t,tc[t]?tc[t]+" file"+(tc[t]>1?"s":""):"No files yet",()=>browse(t),!tc[t])));
+  types.forEach(t=>el.push(box(TI[t]||"📁",t,tc[t]?tc[t]+" file"+(tc[t]>1?"s":""):"No files yet",()=>browse(t,null,null,{...ov,sem:BR.sem}),!tc[t])));
   g.replaceChildren(...el)}
+if($("bBranch")){$("bBranch").onchange=()=>{BR.branch=$("bBranch").value;BR.sem="";branchPage()};$("bYear").onchange=()=>{BR.year=$("bYear").value;BR.sem="";branchPage()};$("bSem").onchange=()=>{BR.sem=$("bSem").value;branchPage()}}
 
 // ---- info pages: every menu item / card / bottom-nav tab opens a real screen ----
 const APK_URL=""; // paste your APK download link here when ready

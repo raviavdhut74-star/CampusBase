@@ -179,3 +179,9 @@ body{background:linear-gradient(rgba(2,8,22,.18),rgba(2,8,22,.18)),url("bg.jpg")
 .subj-bar .sj:first-child{grid-column:1/-1;text-align:center;font-weight:700}
 
 .filters[hidden]{display:none}.br-grid>.br-note{grid-column:1/-1;font-size:.82rem;line-height:1.4;border-color:var(--accent2)}
+
+/* ---- branch picker + admin storage summary ---- */
+.br-filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:14px 0 4px}
+.br-filters label{display:grid;gap:4px;font-size:.78rem;color:var(--muted)}
+.br-filters select{padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--text)}
+.up-where{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:.8rem;margin:8px 0}

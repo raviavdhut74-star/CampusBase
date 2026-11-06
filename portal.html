@@ -32,6 +32,7 @@
 
 <section class="view wrap" id="v-branch" hidden>
   <div class="card row mt" id="brHead"></div>
+  <div class="br-filters" id="brFilters"><label>Branch<select id="bBranch"></select></label><label>Year<select id="bYear"></select></label><label>Semester<select id="bSem"></select></label></div>
   <h3 class="sec">Select a Subject or Resource</h3><p class="muted" id="brSub"></p>
   <div class="br-grid mt" id="brGrid"></div>
 </section>
@@ -74,6 +75,7 @@
     <label class="chk"><input id="uFree" type="checkbox" checked> Visible & open for all students (untick = Premium only)</label>
     <button class="primary-btn" id="upGo" type="submit">Upload</button><div class="muted" id="upSum"></div></form>
   <h3 class="sec">Uploaded files — delete anytime</h3>
+  <div class="up-where" id="upSummary"></div>
   <div class="up-tools"><input id="upSearch" class="search" placeholder="🔍 Search uploaded files…"><select id="upFilt"><option value="__all__">All subjects</option></select></div><ul class="saved-list" id="upList"></ul>
 </section>
 </main>
