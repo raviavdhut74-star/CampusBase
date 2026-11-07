@@ -73,7 +73,7 @@
     <div class="up-step"><b>1 · Where should it appear?</b>
       <div class="up-grid"><label>University<select id="uUni"></select></label><label>Branch<select id="uBranch"></select></label><label>Year<select id="uYear"></select></label><label>Semester<select id="uSem" required></select></label><label>Type<select id="uType"></select></label></div>
       <label>Subject<div class="up-subj"><select id="uSubject"></select><button type="button" class="uni-btn" id="addSubj">＋ New</button></div></label>
-      <div class="up-subj" id="newSubRow" hidden><input id="newSub" class="search" maxlength="80" placeholder="New subject name, e.g. Data Structures"><button type="button" class="uni-btn" id="saveSub">Add</button></div>
+      <div class="up-subj" id="newSubRow" hidden><textarea id="newSub" class="search" rows="3" placeholder="One subject per line — you can paste many at once"></textarea><button type="button" class="uni-btn" id="saveSub">Add</button></div>
     </div>
     <div class="up-step"><b>2 · Add files</b>
       <div class="drop" id="drop" tabindex="0" role="button" aria-label="Choose files"><span>📁</span><b>Drag &amp; drop files here</b><small>or tap to browse · PDF, image, Word, PPT, Excel… · max 20 MB each · multiple allowed</small><input id="uFile" type="file" multiple hidden></div>

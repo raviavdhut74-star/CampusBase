@@ -195,11 +195,12 @@ async function loadSubj(keep){semOpts();const{data,error}=await supabase.from("s
   if(error)toast("Subjects: "+error.message+" (run subject_setup.sql)");SUBJ_ALL=data||[];subjOptsUp(keep)}
 ["uUni","uBranch","uYear"].forEach(i=>$(i).addEventListener("change",()=>loadSubj()));if($("uSem"))$("uSem").addEventListener("change",()=>subjOptsUp($("uSubject").value));
 $("addSubj").onclick=()=>{const r=$("newSubRow");r.hidden=!r.hidden;if(!r.hidden)$("newSub").focus()};
-$("newSub").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();$("saveSub").click()}};
-$("saveSub").onclick=async()=>{if(!S.admin)return toast("Admins only");const n=$("newSub").value.trim().replace(/\s+/g," ");if(!n)return toast("Enter a subject name");
-  const{error}=await supabase.from("subjects").insert({university:$("uUni").value,branch:$("uBranch").value,year:$("uYear").value,name:n,semester:+$("uSem").value||null});
-  if(error&&!/duplicate|unique/i.test(error.message))return toast(error.message);
-  $("newSub").value="";$("newSubRow").hidden=true;await loadSubj(n);toast(error?"Subject already exists — selected":"Subject added ✓")};
+$("saveSub").onclick=async()=>{if(!S.admin)return toast("Admins only");
+  const names=[...new Set($("newSub").value.split(/[\n;]+/).map(s=>s.trim().replace(/\s+/g," ").slice(0,80)).filter(Boolean))];if(!names.length)return toast("Enter at least one subject name");
+  const U=$("uUni").value,B=$("uBranch").value,Y=$("uYear").value,SM=+$("uSem").value||null;let add=0,dup=0;
+  for(const name of names){const{error}=await supabase.from("subjects").insert({university:U,branch:B,year:Y,name,semester:SM});
+    if(!error)add++;else if(/duplicate|unique/i.test(error.message))dup++;else return toast(error.message)}
+  $("newSub").value="";$("newSubRow").hidden=true;await loadSubj(names[0]);toast(`${add} subject${add===1?"":"s"} added`+(dup?` · ${dup} already existed`:"")+" ✓")}
 
 // file queue: drag & drop / browse, editable title per file
 let Q=[];

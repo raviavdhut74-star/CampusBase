@@ -27,3 +27,16 @@ Site Vercel var HTTPS ahe, mhanun ti **installable app (PWA)** zali ahe. Navin f
 **C) Capacitor (native plugins/notifications hava asel tar):** `npm i @capacitor/core @capacitor/cli @capacitor/android` →
 `npx cap init CampusBase in.campusbase.app --web-dir .` → `npx cap add android` → `npx cap open android` → Android Studio madhun Build APK.
 (Ya madhe file open karnyasathi PDF viewer plugin lagu shakto, tyamule B (PWABuilder) sopa ahe.)
+
+## 4) Microsoft Store (Windows)
+Microsoft Store var individual developer registration ata free ahe (personal Microsoft account + ID verification).
+1. https://partner.microsoft.com → Developer account banva → **Apps and games → New product → MSIX or PWA app** → app cha naav reserve kara.
+2. **Product management → Product identity** madhun 3 values copy kara: *Package ID, Publisher ID, Publisher display name*.
+3. https://www.pwabuilder.com → site cha URL → Package for stores → **Windows** → vartil 3 values paste kara → Generate → `.msixbundle` download.
+4. Partner Center madhe **Start your submission → Packages** madhe `.msixbundle` upload kara. Store listing: description, screenshots (1366x768 kiva 1920x1080, kimaan 1), age rating.
+5. **Privacy policy URL:** `https://<tuzi-site>/privacy.html` (file ya zip madhe ahe — tyat tuza email taka ani deploy kara).
+6. Submit. Review sadharan 1–2 divas gheto.
+Navin version: site deploy kara — app web content automatic update hoto (store package parat upload karaycha garaj nahi, manifest badallyas tarach).
+
+## 5) Subjects bhar bharlyasathi
+Admin → Upload Files → University/Branch/Year/Semester nivadha → Subject chya baajula **＋ New** → ek line = ek subject paste kara → Add.

@@ -185,3 +185,5 @@ body{background:linear-gradient(rgba(2,8,22,.18),rgba(2,8,22,.18)),url("bg.jpg")
 .br-filters label{display:grid;gap:4px;font-size:.78rem;color:var(--muted)}
 .br-filters select{padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--text)}
 .up-where{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:.8rem;margin:8px 0}
+
+.up-subj textarea{flex:1;min-width:0;resize:vertical;font:inherit}
