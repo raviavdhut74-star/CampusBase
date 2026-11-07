@@ -3,7 +3,7 @@
 ## 1) Files open honyasathi (ek vela)
 Supabase → SQL Editor madhe `open_files.sql` run kara. Ata logged-in students la sagle files ughadtat.
 
-## 2) Premium (ata BAND ahe)
+## 2) Premium (ata CHALU ahe: Silver ₹99 / Gold ₹149 / Diamond ₹249, 30 divas)
 `portal.js` chya var `const PREMIUM_ON=false;` ahe.
 - **false:** konatyahi student la Premium/🔒/paywall disat nahi, sagle files open.
 - **Premium chalu karayla** (jevha tu sangshil): `PREMIUM_ON=true` kara → `subscription_setup.sql` run kara →
@@ -40,3 +40,9 @@ Navin version: site deploy kara — app web content automatic update hoto (store
 
 ## 5) Subjects bhar bharlyasathi
 Admin → Upload Files → University/Branch/Year/Semester nivadha → Subject chya baajula **＋ New** → ek line = ek subject paste kara → Add.
+
+## 6) Premium chalu karnyache steps
+1. `premium_tiers.sql` run kara (plans, tiers, private bucket, policies).
+2. Payment sathi Cashfree: `README_subscription.md` pramane 3 Edge Functions (create-order, verify-payment, cashfree-webhook) deploy kara ani Cashfree keys secrets madhe taka — he kelyashivay "Pay" button chalnar nahi.
+3. Admin upload page madhe ata **Access** dropdown ahe: Free / Silver / Gold / Diamond. Silver chi file Silver, Gold ani Diamond student la; Gold chi file Gold ani Diamond la; Diamond chi file fakt Diamond la ughadte.
+4. Premium parat band karayla: `portal.js` madhe `PREMIUM_ON=false`.

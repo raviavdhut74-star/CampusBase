@@ -187,3 +187,13 @@ body{background:linear-gradient(rgba(2,8,22,.18),rgba(2,8,22,.18)),url("bg.jpg")
 .up-where{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:.8rem;margin:8px 0}
 
 .up-subj textarea{flex:1;min-width:0;resize:vertical;font:inherit}
+
+/* ---- premium plans (Silver / Gold / Diamond) ---- */
+.pl-title{text-align:center;font-size:1.5rem;margin:6px 0 4px}.pl-sub{text-align:center;margin:0 0 14px}.pl-note{font-size:.78rem;text-align:center}
+.plan-list{display:grid;gap:12px;margin:8px 0 14px}
+.plan-card{display:grid;gap:6px;width:100%;text-align:left;padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--text);cursor:pointer;font:inherit}
+.plan-card p{margin:0;font-size:.85rem;line-height:1.45}
+.plan-card[aria-pressed="true"]{border-color:var(--accent2);box-shadow:0 0 0 2px var(--accent2)}
+.plan-top{display:flex;justify-content:space-between;align-items:center;gap:10px}.plan-top b{font-size:1.05rem}
+.plan-price{background:var(--bg2);color:var(--accent);padding:4px 12px;border-radius:999px;font-size:.78rem;white-space:nowrap}
+.chip.tier1{background:#e5e7eb;color:#374151}.chip.tier2{background:#fef3c7;color:#92400e}.chip.tier3{background:#e0f2fe;color:#075985}
