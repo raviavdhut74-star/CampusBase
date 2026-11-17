@@ -13,6 +13,8 @@ const SOCIAL={instagram:{on:true,url:"https://www.instagram.com/campus_base"},wh
 const C={unis:["SPPU","BATU","SGBBU","AKTU"],branches:[...new Set(["AI & ML",...CATALOG.branches])],years:CATALOG.years,
   types:[...new Set(["Notes","Handwritten Notes","Question Bank","Answer Bank","Formula Notes","Previous Year Papers","Books","MCQ",...CATALOG.types])]};
 const UA={BATU:["BATU","DBATU"],SPPU:["SPPU","SPPU (Pune)"],SGBBU:["SGBBU","SGBAU"]},ua=x=>UA[x]||[x];
+// FE (first year) files that admin marks "Common to All Branches" are stored with branch=COMMON; students get them automatically.
+const COMMON="COMMON",COMMON_LABEL="Common to All Branches",brLabel=b=>b===COMMON?COMMON_LABEL:b,brIn=(B,Y)=>Y==="FE"?[B,COMMON]:[B];
 const YL={FE:"First Year",SE:"Second Year",TE:"Third Year",BE:"Final Year"};
 const $=id=>document.getElementById(id);
 const toast=t=>{const e=$("toast");e.textContent=t;e.classList.add("show");setTimeout(()=>e.classList.remove("show"),2600)};
@@ -111,9 +113,9 @@ async function show(){const t=$("tabs");t.replaceChildren();[ALLSUB,...C.types].
   const l=$("resList");l.replaceChildren(mk("li","Loading…","none"));
   const U=$("fUni").value,B=$("fBranch").value,Y=$("fYear").value,SM=$("fSem")?$("fSem").value:"";
   // ONLY the selected university + branch + year (+ semester / subject) — nothing from other branches
-  let rq=supabase.from("resources").select("*").in("university",ua(U)).eq("branch",B).eq("year",Y);
+  let rq=supabase.from("resources").select("*").in("university",ua(U)).in("branch",brIn(B,Y)).eq("year",Y);
   if(tab!==ALLSUB)rq=rq.eq("type",tab);if(SM)rq=rq.eq("semester",+SM);
-  const[r,s]=await Promise.all([rq.order("created_at",{ascending:false}),supabase.from("subjects").select("name,semester").in("university",ua(U)).eq("branch",B).eq("year",Y)]);
+  const[r,s]=await Promise.all([rq.order("created_at",{ascending:false}),supabase.from("subjects").select("name,semester").in("university",ua(U)).in("branch",brIn(B,Y)).eq("year",Y)]);
   if(r.error){l.replaceChildren(mk("li",r.error.message,"none"));return}
   subjCache=r.data;subjNames=(s.data||[]).filter(x=>!SM||!x.semester||x.semester===+SM).map(x=>x.name);
   if(SEM){const set=new Set(SEM);subjCache=subjCache.filter(x=>set.has(subOf(x)));subjNames=SEM}
@@ -187,7 +189,12 @@ async function doAuth(id,pw,m,form){const em=id.toLowerCase();
 $("adOut").onclick=logout;
 
 // admin: upload (any file, many at once) / delete
-fill("uUni",C.unis);fill("uBranch",C.branches);fill("uYear",C.years,YL);fill("uType",C.types);
+fill("uUni",C.unis);fill("uYear",C.years,YL);fill("uType",C.types);
+// Admin-only: for First Year (FE) an extra "Common to All Branches" choice appears at the top of the Branch list.
+function fillUBranch(){const el=$("uBranch"),cur=el.value,isFE=$("uYear").value==="FE";
+  el.replaceChildren(...(isFE?[new Option("🌐 "+COMMON_LABEL,COMMON)]:[]),...C.branches.map(b=>new Option(b,b)));
+  if([...el.options].some(o=>o.value===cur))el.value=cur}
+fillUBranch();
 const MAXB=20*1024*1024;
 // Subject = dropdown of subjects saved for the chosen university/branch/year. "＋ New" adds one to the list.
 let SUBJ_ALL=[];
@@ -197,6 +204,7 @@ function subjOptsUp(keep){const sem=+$("uSem").value,names=SUBJ_ALL.filter(r=>!r
   const m=keep&&names.find(n=>n.toLowerCase()===keep.toLowerCase());if(m)$("uSubject").value=m}
 async function loadSubj(keep){semOpts();const{data,error}=await supabase.from("subjects").select("name,semester").eq("university",$("uUni").value).eq("branch",$("uBranch").value).eq("year",$("uYear").value).order("name");
   if(error)toast("Subjects: "+error.message+" (run subject_setup.sql)");SUBJ_ALL=data||[];subjOptsUp(keep)}
+$("uYear").addEventListener("change",fillUBranch);
 ["uUni","uBranch","uYear"].forEach(i=>$(i).addEventListener("change",()=>loadSubj()));if($("uSem"))$("uSem").addEventListener("change",()=>subjOptsUp($("uSubject").value));
 $("addSubj").onclick=()=>{const r=$("newSubRow");r.hidden=!r.hidden;if(!r.hidden)$("newSub").focus()};
 $("saveSub").onclick=async()=>{if(!S.admin)return toast("Admins only");
@@ -245,17 +253,17 @@ $("upForm").onsubmit=async e=>{e.preventDefault();if(!S.admin)return toast("Admi
 // uploaded files: search + subject filter + delete
 let UP=[];
 function renderUp(){const l=$("upList"),q=$("upSearch").value.trim().toLowerCase(),sf=$("upFilt").value;l.replaceChildren();
-  const rows=UP.filter(x=>(sf===ALLSUB||(x.subject||"General")===sf)&&(!q||(x.title+" "+(x.subject||"")+" "+x.type+" "+x.branch).toLowerCase().includes(q)));
+  const rows=UP.filter(x=>(sf===ALLSUB||(x.subject||"General")===sf)&&(!q||(x.title+" "+(x.subject||"")+" "+x.type+" "+brLabel(x.branch)).toLowerCase().includes(q)));
   if(!rows.length)return l.append(mk("li",UP.length?"No matches.":"No files uploaded yet.","none"));
   rows.forEach(x=>{const li=document.createElement("li"),a=mk("a",x.title);a.href="#";a.onclick=e=>{e.preventDefault();openFile(x)};const b=mk("button","Delete","danger-btn");
     b.onclick=async()=>{if(!confirm(`Delete "${x.title}"?`))return;b.disabled=true;const{error:e1}=await supabase.storage.from(BUCKET).remove([x.file_path]);if(e1){b.disabled=false;return toast("File delete failed: "+e1.message)}
       const{error:e2}=await supabase.from("resources").delete().eq("id",x.id);if(e2){b.disabled=false;return toast(e2.message)}toast("Deleted ✓");list()};
-    li.append(a,mk("span",`${x.university} · ${x.branch} · ${x.year}${x.semester?" · Sem "+ROMAN[x.semester]:""} · ${x.type}${x.subject?" · "+x.subject:""}${needTier(x)?" · "+TICON[needTier(x)]+TIERS[needTier(x)]:" · FREE"}`),b);l.append(li)})}
+    li.append(a,mk("span",`${x.university} · ${brLabel(x.branch)} · ${x.year}${x.semester?" · Sem "+ROMAN[x.semester]:""} · ${x.type}${x.subject?" · "+x.subject:""}${needTier(x)?" · "+TICON[needTier(x)]+TIERS[needTier(x)]:" · FREE"}`),b);l.append(li)})}
 async function list(){const l=$("upList");l.replaceChildren(mk("li","Loading…","none"));
   const{data,error}=await supabase.from("resources").select("*").order("created_at",{ascending:false});
   if(error)return l.replaceChildren(mk("li",error.message,"none"));
   UP=data;
-  const grp={};UP.forEach(x=>{const k=`${x.university} · ${x.branch} · ${x.year}${x.semester?" · Sem "+ROMAN[x.semester]:""}`;grp[k]=(grp[k]||0)+1});
+  const grp={};UP.forEach(x=>{const k=`${x.university} · ${brLabel(x.branch)} · ${x.year}${x.semester?" · Sem "+ROMAN[x.semester]:""}`;grp[k]=(grp[k]||0)+1});
   if($("upSummary"))$("upSummary").replaceChildren(mk("b","Stored under:"),...Object.entries(grp).sort().map(([k,v])=>mk("span",`${k} (${v})`,"chip")));
   const keep=$("upFilt").value,subs=[...new Set(UP.map(x=>x.subject||"General"))].sort((a,b)=>a.localeCompare(b));
   $("upFilt").innerHTML=`<option value="${ALLSUB}">All subjects (${UP.length})</option>`+opts(subs,subs.includes(keep)?keep:null);renderUp()}
@@ -279,8 +287,8 @@ async function branchPage(){const u0=me();if(!u0)return;
   $("brHead").innerHTML=`<span class="av" style="border-radius:14px">${BR_ICON[u.branch]||"🎓"}</span><div><b>${esc(full)}</b><div class="muted">${esc(u.uni)} | ${esc(YL[u.year]||u.year)} 2025–26</div><span class="chip">${esc(ys.toUpperCase())} ENGINEERING</span></div>`;
   const g=$("brGrid");g.replaceChildren(mk("div","Loading…","muted"));
   const[sj,rs]=await Promise.all([
-    supabase.from("subjects").select("name,semester").in("university",ua(u.uni)).eq("branch",u.branch).eq("year",u.year).order("name"),
-    supabase.from("resources").select("subject,type,semester").in("university",ua(u.uni)).eq("branch",u.branch).eq("year",u.year)]);
+    supabase.from("subjects").select("name,semester").in("university",ua(u.uni)).in("branch",brIn(u.branch,u.year)).eq("year",u.year).order("name"),
+    supabase.from("resources").select("subject,type,semester").in("university",ua(u.uni)).in("branch",brIn(u.branch,u.year)).eq("year",u.year)]);
   const err=rs.error||sj.error;if(err){toast("Could not load: "+err.message);g.replaceChildren(mk("div","⚠ "+err.message+" — run fix_all.sql in Supabase","card muted"));return}
   const sem=+BR.sem||0,rows=(rs.data||[]).filter(r=>!sem||!r.semester||r.semester===sem);
   const cnt={},tc={};rows.forEach(r=>{const k=(r.subject||"").trim()||"General";cnt[k]=(cnt[k]||0)+1;tc[r.type]=(tc[r.type]||0)+1});
@@ -351,12 +359,14 @@ const PAGES={
 };
 
 // ---- premium / subscription ----
-async function openFile(x){dlAdd(x);toast("Opening…");
-  let url=null;
-  const{data,error}=await supabase.storage.from(BUCKET).createSignedUrl(x.file_path,600);
-  if(!error&&data)url=data.signedUrl;else if(x.file_url)url=x.file_url;      // bucket public -> plain link also works
-  if(!url)return toast("Cannot open file: "+(error?error.message:"not available")+" — admin: run open_files.sql");
-  const w=open(url,"_blank","noopener");if(!w)location.href=url}      // popup blocked / installed app -> open in same tab
+async function openFile(x){dlAdd(x);toast("Downloading…");
+  // file name = title + original extension (e.g. "DSA Notes.pdf"); Supabase adds Content-Disposition: attachment so the browser saves it
+  const ext=(String(x.file_path||"").match(/\.[a-z0-9]{1,5}$/i)||[""])[0],name=(String(x.title||"file").replace(/[\\/:*?"<>|]+/g," ").trim()||"file")+ext;
+  let url=null,err=null;
+  const{data,error}=await supabase.storage.from(BUCKET).createSignedUrl(x.file_path,600,{download:name});
+  if(!error&&data)url=data.signedUrl;else{err=error;url=supabase.storage.from(BUCKET).getPublicUrl(x.file_path,{download:name}).data.publicUrl}   // bucket public -> plain link also works
+  if(!url)return toast("Cannot download file: "+(err?err.message:"not available")+" — admin: run open_files.sql");
+  const a=document.createElement("a");a.href=url;a.download=name;a.rel="noopener";document.body.append(a);a.click();a.remove()}
 async function paywall(minTier){if(!PREMIUM_ON)return soon();if(!S.user){toast("Please login first");location.hash="login";return}
   if($("modal").open)$("modal").close();
   const s=$("sheet"),b=$("sheetBody");b.innerHTML='<h3 class="pl-title">⭐ Premium plans</h3><p class="muted">Loading plans…</p>';if(!s.open)s.showModal();
